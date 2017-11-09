@@ -15,6 +15,8 @@ extern int AM_errno;
 #define LESS_THAN_OR_EQUAL 5
 #define GREATER_THAN_OR_EQUAL 6
 
+#define MAXFILES 20
+#define MAXSCANS 20
 void AM_Init( void );
 
 
