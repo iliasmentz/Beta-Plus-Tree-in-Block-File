@@ -16,6 +16,14 @@ typedef struct file{
     /*node * tree;*/
 } file;
 
+typedef struct filesArray {
+  char attr1;
+  int attrLength1;
+  char attr2;
+  int attrLength2;
+  int file_d;
+} filesArray;
+
 
 
 /****************************************************
@@ -24,6 +32,7 @@ typedef struct file{
 int openfiles;
 int openscans;
 BF_Block * block;
+filesArray *open;
 
 
 /****************************************************
@@ -47,6 +56,7 @@ int AM_errno = AME_OK;
 void AM_Init() {
     BF_Init(LRU);
     BF_Block_Init(&block);
+    open = (filesArray *)malloc(MAXFILES *sizeof(filesArray));
     openfiles =0;
     openscans =0;
 	return;
@@ -102,6 +112,41 @@ int AM_DestroyIndex(char *fileName) {
 
 
 int AM_OpenIndex (char *fileName) {
+
+  int fd;
+  char *data;
+  char s[100];
+  char n[100];
+  int l =0;
+  int num;
+  checkBF(BF_OpenFile(fileName , &fd));
+  checkBF(BF_AllocateBlock(fd , block));
+  data = BF_Block_GetData(block);
+  data += sizeof("AM_Index");                     //dokimastika
+  if (l == 0){
+  open[0].attr1 = (*data);
+  data += sizeof(char);
+  sprintf(s, "%d" , data);
+  num = atoi(s);
+  printf("%d\n" , num);
+  open[0].attrLength1 = num;
+  data += sizeof(int);
+  open[0].attr2 = (*data);
+  data += sizeof(char);
+  sprintf(n, "%d" ,data);
+  num = atoi(n);
+  printf("%d\n",num);
+  open[0].attrLength2 = num;
+  open[0].file_d = fd;
+  l =1;
+  }
+  //sprintf(open[0].file_d , "%d" , &fd);
+  printf("%c kai %d kai %c kai %d", open[0].attr1 , open[0].attrLength1 , open[0].attr2 , open[0].attrLength2 );
+
+
+
+
+
   return AME_OK;
 }
 
