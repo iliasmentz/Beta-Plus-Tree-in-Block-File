@@ -89,6 +89,7 @@ void AM_Init() {
 int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrType2, int attrLength2)
 {
     /*check if the lengths for int and float are valid*/
+    printf("%s\n", fileName );
    if ( (attrType1 == 'i' && attrLength1!=sizeof(int)) || (attrType2 == 'i' && attrLength2!=sizeof(int)) ||
    (attrType1 == 'f' && attrLength1!=sizeof(float)) || (attrType2 == 'f' && attrLength2!=sizeof(float)) )
    {
@@ -107,17 +108,23 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
    data += sizeof("AM_Index");
 
    (*data) = attrType1;
+   // printf("%c\n", *data );
    data += sizeof(char);
 
     memcpy(data, &attrLength1, sizeof(int));
-   //sprintf(data, "%d",attrLength1);
+   // sprintf(data, "%d",attrLength1);
+   // printf("INt :%d\n", *(int * )data );
    data += sizeof(int);
 
    (*data) = attrType2;
+   // printf("%c\n", *data );
    data += sizeof(char);
 
+
     memcpy(data, &attrLength2, sizeof(int));
-  // sprintf(data, "%d",attrLength2);
+    // printf("INt :%d\n", *(int * )data );
+
+    // sprintf(data, "%d",attrLength2);
    data += sizeof(int);
 
    int root=0;
@@ -125,6 +132,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   // sprintf(data, "%d",root);
    BF_Block_SetDirty(block);
    BF_UnpinBlock(block);
+   BF_CloseFile(fd);
    return AME_OK;
 }
 
@@ -156,41 +164,47 @@ int AM_DestroyIndex(char *fileName) {
     return AME_OK;
 }
 
-
+  int l =0;
 int AM_OpenIndex (char *fileName) {
 
   int fd;
   char *data;
   char s[100];
   char n[100];
-  int l =0;
+
   int num;
   checkBF(BF_OpenFile(fileName , &fd));
-  checkBF(BF_AllocateBlock(fd , block));
+  checkBF(BF_GetBlock(fd, 0, block));
   data = BF_Block_GetData(block);
+
+  if (memcmp(data, "AM_Index", sizeof("AM_Index"))!=0)
+  {
+      printf("ERROR %s\n", fileName );
+      return -1;
+  }
   data += sizeof("AM_Index");                     //dokimastika
   if (l == 0){
-  open[0].attr1 = (*data);
-  data += sizeof(char);
-  memcpy(&open[0].attrLength1 , data , sizeof(int));
-  sprintf(s, "%d" , data);
-  num = atoi(s);
-  printf("%d\n" , num);
-  //open[0].attrLength1 = num;
-  data += sizeof(int);
-  open[0].attr2 = (*data);
-  data += sizeof(char);
-  sprintf(n, "%d" ,data);
-  num = atoi(n);
-  printf("%d\n",num);
-  open[0].attrLength2 = num;
-  open[0].file_d = fd;
-  l =1;
+      open[0].attr1 = (*data);
+      printf("EDW %s\n", (data));
+      data += sizeof(char);
+      open[0].attrLength1 = *(int *) data;
+    //   sprintf(s, "%d" , data);
+    //   num = atoi(s);
+    //   printf("%d\n" , num);
+      data += sizeof(int);
+      open[0].attr2 = (*data);
+      data += sizeof(char);
+        //   sprintf(n, "%d" ,data);
+        //   num = atoi(n);
+        //   printf("%d\n",num);
+      open[0].attrLength2 = *(int *) data;
+      open[0].file_d = fd;
+      l =1;
   }
   //sprintf(open[0].file_d , "%d" , &fd);
-  printf("%c kai %d kai %c kai %d", open[0].attr1 , open[0].attrLength1 , open[0].attr2 , open[0].attrLength2 );
+  printf("%c kai %d kai %c kai %d\n", open[0].attr1 , open[0].attrLength1 , open[0].attr2 , open[0].attrLength2 );
 
-
+  BF_UnpinBlock(block);
 
 
 
