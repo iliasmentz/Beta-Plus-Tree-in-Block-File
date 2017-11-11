@@ -8,13 +8,12 @@
                 ~~Struct Definitions~~
 ****************************************************/
 
-typedef struct file{
-    char filename[128];
-    int fd;
+typedef struct open_file{
+    char filename[60];
+    int fileDesc;
     char keytype;
     char datatype;
-    /*node * tree;*/
-} file;
+  } Open_File;
 
 typedef struct filesArray {
   char attr1;
@@ -25,12 +24,20 @@ typedef struct filesArray {
 } filesArray;
 
 
+typedef struct Scan{
+    int fileDesc;
+    int op;
+    void * value;
+    void * current;
+} Scan;
 
 /****************************************************
                 ~~Global Variables~~
 ****************************************************/
 int openfiles;
 int openscans;
+Open_File open_files[MAXFILES];
+Scan scans[MAXSCANS];
 BF_Block * block;
 filesArray *open;
 
@@ -47,6 +54,15 @@ void checkBF(BF_ErrorCode e)
     }
 }
 
+/*Upon successful completion, the open function shall open the file and return
+a non-negative integer representing the lowest numbered unused file descriptor.
+By this way, */
+int hashfile(int fd)
+{
+    return fd%MAXFILES;
+}
+
+
 /****************************************************
                 ~~AM FUNCTIONS~~
 ****************************************************/
@@ -59,6 +75,13 @@ void AM_Init() {
     open = (filesArray *)malloc(MAXFILES *sizeof(filesArray));
     openfiles =0;
     openscans =0;
+
+
+    int i;
+    for ( i=0 ; i<MAXFILES; i++)
+        open_files[i].fileDesc = -1;
+    for(i=0; i<MAXSCANS; i++)
+        scans[i].fileDesc = -1;
 	return;
 }
 
@@ -86,20 +109,20 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
    (*data) = attrType1;
    data += sizeof(char);
 
-   // memcpy(data, &attrLength1, sizeof(int));
-   sprintf(data, "%d",attrLength1);
+    memcpy(data, &attrLength1, sizeof(int));
+   //sprintf(data, "%d",attrLength1);
    data += sizeof(int);
 
    (*data) = attrType2;
    data += sizeof(char);
 
-   // memcpy(data, &attrLength2, sizeof(int));
-   sprintf(data, "%d",attrLength2);
+    memcpy(data, &attrLength2, sizeof(int));
+  // sprintf(data, "%d",attrLength2);
    data += sizeof(int);
 
    int root=0;
-   // memcpy(data, &root, sizeof(int));
-   sprintf(data, "%d",root);
+    memcpy(data, &root, sizeof(int));
+  // sprintf(data, "%d",root);
    BF_Block_SetDirty(block);
    BF_UnpinBlock(block);
    return AME_OK;
@@ -107,7 +130,30 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
 
 int AM_DestroyIndex(char *fileName) {
-  return AME_OK;
+
+    int i;
+    for(i=0; i<MAXFILES; i++)
+    {
+        if(open_files[i].fileDesc >= 0)
+        {
+            if(strcmp(fileName, open_files[i].filename)==0)
+            {
+                AM_errno = AME_FILEOPEN;
+                fprintf(stderr, "Can't Delete! File is open\n");
+                return AM_errno;
+            }
+        }
+    }
+
+    int status = remove(fileName);
+    if(status ==0)
+        printf("File %s deleted", fileName);
+    else
+    {
+            AM_errno = AME_CANTDESTROY;
+            fprintf(stderr, "Can't Destroy the file for some reason\n" );
+    }
+    return AME_OK;
 }
 
 
@@ -126,10 +172,11 @@ int AM_OpenIndex (char *fileName) {
   if (l == 0){
   open[0].attr1 = (*data);
   data += sizeof(char);
+  memcpy(&open[0].attrLength1 , data , sizeof(int));
   sprintf(s, "%d" , data);
   num = atoi(s);
   printf("%d\n" , num);
-  open[0].attrLength1 = num;
+  //open[0].attrLength1 = num;
   data += sizeof(int);
   open[0].attr2 = (*data);
   data += sizeof(char);

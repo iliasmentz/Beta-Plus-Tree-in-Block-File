@@ -7,6 +7,10 @@ extern int AM_errno;
 
 #define AME_OK 0
 #define AME_EOF -1
+#define AME_FILEEXISTS -2
+#define AME_FILEOPEN -3
+#define AME_CANTDESTROY -4
+
 
 #define EQUAL 1
 #define NOT_EQUAL 2
@@ -17,6 +21,7 @@ extern int AM_errno;
 
 #define MAXFILES 20
 #define MAXSCANS 20
+
 void AM_Init( void );
 
 
