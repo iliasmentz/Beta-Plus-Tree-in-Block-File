@@ -137,6 +137,34 @@ void checkBF(BF_ErrorCode e)
     }
 }
 
+int CompareKeys (void *ptr1 , void *ptr2 , char type)
+{
+	if (type == 'c')
+	{
+		char * a = (char *) ptr1;
+		char *b = (char *) ptr2;
+		return strcmp(a , b);
+	}
+	if (type == 'i')
+	{
+		int a = *(int *) ptr1;
+		int b = *(int *) ptr2;
+		return a-b;
+
+	}
+	else
+		{
+			float a = *(float *) ptr1;
+			float b = *(float *) ptr2;
+			if (a-b < 0.0)
+				return -1;
+			else if(a-b > 0.0)
+					return 1;
+			else
+					return 0;
+		}
+}
+
 /*Upon successful completion, the open function shall open the file and return
 a non-negative integer representing the lowest numbered unused file descriptor.
 By this way, */
@@ -320,7 +348,7 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-<<<<<<< HEAD
+
 	int index = hashfile(fileDesc);
 	int blocks_n;
 	char *data;
@@ -341,9 +369,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data ,&null_pointer , sizeof(int));
 		data += sizeof(int);
-		memcpy(data , value1 ,open_files[index].attrLength1);				//
+		memcpy(data , value1 ,open_files[index].attrLength1);
 		data += open_files[index].attrLength1;
 		memcpy(data , &(blocks_n+1) , sizeof(int));
+		BF_Block_SetDirty(block);
+		checkBF(BF_UnpinBlock(block));
+
 
 		//ftiaxnoume to prwto block dedomenwn
 		checkBF(BF_AllocateBlock(fileDesc , block));
@@ -358,46 +389,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		memcpy(data , value1 , open_files[index].attrLength1);
 		data += open_files[index].attrLength1;
 		memcpy(data , value2 , open_files[index].attrLength2);
-
+		BF_Block_SetDirty(block);
+		checkBF(BF_UnpinBlock(block));
 
 	}
 
-=======
-  // Find the corresponding open file
-  /*int index = hashfile(fileDesc);
-  if(open_files[index] == -1){
-  	printf("Error! File isn't open\n");
-  	return -1;
-  }
 
-  int blocks_num;
-  check(BF_GetBlockCounter(fileDesc,&blocks_num));*/
-
-  /* The file contains only one block,
-  which holds information about it */
-  // if(blocks_num == 1){
-  	// Create the root of the B-plus tree
-  	// checkBF(BF_AllocateBlock(fileDesc,block));
-
-  	// char *data = BF_Block_GetData(block);
-
-  	/* Initialize both the parent and the first child
-  	of the root to zero (NULL) */
-  	// int tmp = 0;
-  	// for(int i = 0; i < 2*sizeof(int);i++){
-  		// memcpy(data,&tmp,sizeof(char));
-  		// data += sizeof(char);
-  	// }
-
-  	// Insert the key value
-  	// memcpy(data,value1,open_files[index].attrLength1);
-
-  	// Point to the newly created child
-  	// data += open_files[index].attrLength1;
-  	// memcpy(data,&(blocks_num+1),sizeof(int));
-
-  // }
->>>>>>> c692dc46ea672b83d0481128ceea8cfea91ede86
 
   return AME_OK;
 }
