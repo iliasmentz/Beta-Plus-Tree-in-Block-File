@@ -24,8 +24,14 @@ typedef struct Scan{
     void * current;
 } Scan;
 
+
+/****************************************************
+        ~~Our Stack for keeping Parents~~
+****************************************************/
+
+/*  Definitions */
 typedef struct stack_node {
-    int fd;
+    int block_num;
     struct stack_node * next;
 }stack_node;
 
@@ -35,33 +41,39 @@ typedef struct stack{
     int size;
 }stack;
 
+/* Functions */
 stack * create_stack()
 {
+    /* create/initialize empty stack */
     stack * s = malloc(sizeof(stack));
-    stack->start = NULL;
-    stack->end = NULL;
-    stack->size = 0;
+    s->start = NULL;
+    s->end = NULL;
+    s->size = 0;
+
     return s;
 }
 
-stack_node * create_node(int fd)
+stack_node * create_node(int block_num)
 {
+    /* Create a node with the value we need */
     stack_node * node = malloc(sizeof(stack_node));
-    node->fd = fd;
+    node->block_num = block_num;
     node->next = NULL;
+
     return node;
 }
 
-void push(stack * s, int fd)
+void push(stack * s, int block_num)
 {
-    stack_node * node = create_node(fd);
-    if(size==0)
-    {
+    /* Create a node with the value we need */
+    stack_node * node = create_node(block_num);
+    if(s->size==0)
+    {   /*first element in stack*/
         s->start = node;
         s->end = node;
     }
     else
-    {
+    {   /*N-th element in stack*/
         s->end->next = node;
         s->end = node;
     }
@@ -70,11 +82,40 @@ void push(stack * s, int fd)
 
 int pop(stack *s)
 {
+    /*stack is empty or we are on the root*/
     if(s->size ==0)
         return -1;
 
-    
+    /*find the pre-last*/
+    stack_node * temp = s->start;
+    int i;
+    for (i=1 ; i <s->size -1; i++)
+        temp = temp->next;
+
+    /*store the last one and pop from stack*/
+    stack_node * poped = s->end;
+    s->end = temp;
+
+    /*get the block number value*/
+    int num = poped->block_num;
+    /*free the node that poped*/
+    free(poped);
+    s->size--;
+    if(s->size ==0)
+        s->start = NULL;
+
+    /*return the value*/
+    return num;
 }
+
+void clean_stack(stack * s)
+{
+    /*pop until the stack is empty*/
+    while(pop(s)!=-1){}
+    free(s);
+}
+
+
 /****************************************************
                 ~~Global Variables~~
 ****************************************************/
@@ -206,8 +247,8 @@ int AM_DestroyIndex(char *fileName) {
 }
 
 
-int AM_OpenIndex (char *fileName) {	
-  	
+int AM_OpenIndex (char *fileName) {
+
 	int fd;
 	checkBF(BF_OpenFile(fileName,&fd));
 	checkBF(BF_GetBlock(fd,0,block));
@@ -218,7 +259,7 @@ int AM_OpenIndex (char *fileName) {
 		printf("Error! Wrong type of file\n");
 		return -1;
 	}
-	
+
 
 	// Add the opened file to the array
 	Open_File file;
@@ -252,11 +293,11 @@ int AM_OpenIndex (char *fileName) {
 
 
 int AM_CloseIndex (int fileDesc) {
-  	
+
   	// Locate the position of the file
 	int index = hashfile(fileDesc);
-	
-	if(open_files[index].fileDesc != -1 && 
+
+	if(open_files[index].fileDesc != -1 &&
 		scans[index].fileDesc != -1){
 		printf("Error! Can't remove the file from 'open_files'\n");
 		return AME_FILEEXISTS;
@@ -270,7 +311,7 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  
+
   // Find the corresponding open file
   /*int index = hashfile(fileDesc);
   if(open_files[index] == -1){
@@ -299,7 +340,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   	// Insert the key value
   	// memcpy(data,value1,open_files[index].attrLength1);
-  	
+
   	// Point to the newly created child
   	// data += open_files[index].attrLength1;
   	// memcpy(data,&(blocks_num+1),sizeof(int));
