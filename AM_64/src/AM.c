@@ -281,6 +281,8 @@ int AM_OpenIndex (char *fileName) {
 	checkBF(BF_OpenFile(fileName,&fd));
 	checkBF(BF_GetBlock(fd,0,block));
 
+  printf("FILE DESC IN OPEN: %d\n",fd);
+
 	char *data = BF_Block_GetData(block);
 
 	if(memcmp(data,"AM_Index",sizeof("AM_Index")) != 0){
@@ -288,23 +290,18 @@ int AM_OpenIndex (char *fileName) {
 		return -1;
 	}
 
-
-	// Add the opened file to the array
-	Open_File file;
-	strcpy(file.filename,fileName);
-	file.fileDesc = fd;
+  int index = hashfile(fd);
+	strcpy(open_files[index].filename,fileName);
+	open_files[index].fileDesc = fd;
 
 	data += sizeof("AM_Index");
-	memcpy(&file.attr1,data,sizeof(char));
+	memcpy(&open_files[index].attr1,data,sizeof(char));
 	data += sizeof(char);
-	memcpy(&file.attrLength1,data,sizeof(int));
+	memcpy(&open_files[index].attrLength1,data,sizeof(int));
 	data += sizeof(int);
-	memcpy(&file.attr2,data,sizeof(char));
+	memcpy(&open_files[index].attr2,data,sizeof(char));
 	data += sizeof(char);
-	memcpy(&file.attrLength2,data,sizeof(int));
-
-	int index = hashfile(fd);
-	open_files[index] = file;
+	memcpy(&open_files[index].attrLength2,data,sizeof(int));
 
 	// Tests to check the function
 	printf("FileName: %s\n",open_files[index].filename);
@@ -314,9 +311,9 @@ int AM_OpenIndex (char *fileName) {
 	printf("Attr2: %c\n",open_files[index].attr2);
 	printf("attrLength2: %d\n",open_files[index].attrLength2);
 
-  	BF_UnpinBlock(block);
+  BF_UnpinBlock(block);
 
-  return AME_OK;
+  return fd;
 }
 
 
@@ -340,7 +337,8 @@ int AM_CloseIndex (int fileDesc) {
 
 	/* Everything's fine,
 		remove the file */
-	open_files[index].fileDesc = -1;
+	checkBF(BF_CloseFile(open_files[index].fileDesc));
+  open_files[index].fileDesc = -1;
 
   	return AME_OK;
 }
@@ -348,15 +346,14 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-
 	int index = hashfile(fileDesc);
-	int blocks_n;
+	int blocks_num;
 	char *data;
 	int counter;
 	int null_pointer = -1;
-	checkBF(BF_GetBlockCounter(fileDesc , &blocks_n));
+	checkBF(BF_GetBlockCounter(fileDesc , &blocks_num));
 
-	if (blocks_n == 1)
+	if (blocks_num == 1)
 	{
 		//ftiaxnoume to prwto block eurethriou
 		checkBF(BF_AllocateBlock(fileDesc , block));
@@ -371,9 +368,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data , value1 ,open_files[index].attrLength1);
 		data += open_files[index].attrLength1;
-		memcpy(data , &(blocks_n+1) , sizeof(int));
-		BF_Block_SetDirty(block);
-		checkBF(BF_UnpinBlock(block));
+		int tmp = blocks_num + 1;
+    memcpy(data , &tmp , sizeof(int));
+		int tmp1 = 0;
+		
+    BF_Block_SetDirty(block);
+    checkBF(BF_UnpinBlock(block));
 
 
 		//ftiaxnoume to prwto block dedomenwn
@@ -389,11 +389,10 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		memcpy(data , value1 , open_files[index].attrLength1);
 		data += open_files[index].attrLength1;
 		memcpy(data , value2 , open_files[index].attrLength2);
-		BF_Block_SetDirty(block);
-		checkBF(BF_UnpinBlock(block));
+    BF_Block_SetDirty(block);
+    checkBF(BF_UnpinBlock(block));
 
 	}
-
 
 
   return AME_OK;
