@@ -155,8 +155,8 @@ int AM_DestroyIndex(char *fileName) {
 }
 
 
-int AM_OpenIndex (char *fileName) {	
-  	
+int AM_OpenIndex (char *fileName) {
+
 	int fd;
 	checkBF(BF_OpenFile(fileName,&fd));
 	checkBF(BF_GetBlock(fd,0,block));
@@ -167,7 +167,7 @@ int AM_OpenIndex (char *fileName) {
 		printf("Error! Wrong type of file\n");
 		return -1;
 	}
-	
+
 
 	// Add the opened file to the array
 	Open_File file;
@@ -201,10 +201,10 @@ int AM_OpenIndex (char *fileName) {
 
 
 int AM_CloseIndex (int fileDesc) {
-  	
+
   	// Locate the position of the file
 	int index = hashfile(fileDesc);
-	
+
 	if(open_files[index].fileDesc == -1){
 		printf("Error! An open version of the file");
 		printf(" doesn't exist\n");
@@ -218,7 +218,7 @@ int AM_CloseIndex (int fileDesc) {
 			return AME_FILEEXISTS;
 		}
 	}
-	
+
 	/* Everything's fine,
 		remove the file */
 	open_files[index].fileDesc = -1;
@@ -228,41 +228,48 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  
-  // Find the corresponding open file
-  /*int index = hashfile(fileDesc);
-  if(open_files[index] == -1){
-  	printf("Error! File isn't open\n");
-  	return -1;
-  }
 
-  int blocks_num;
-  check(BF_GetBlockCounter(fileDesc,&blocks_num));*/
+	int index = hashfile(fileDesc);
+	int blocks_n;
+	char *data;
+	int counter;
+	int null_pointer = -1;
+	checkBF(BF_GetBlockCounter(fileDesc , &blocks_n));
 
-  /* The file contains only one block,
-  which holds information about it */
-  // if(blocks_num == 1){
-  	// Create the root of the B-plus tree
-  	// checkBF(BF_AllocateBlock(fileDesc,block));
+	if (blocks_n == 1)
+	{
+		//ftiaxnoume to prwto block eurethriou
+		checkBF(BF_AllocateBlock(fileDesc , block));
+		data = BF_Block_GetData(block);
+		 // E gia eurethrio , einani to anagnwristiko oti prokeitai gia block eurethriou kai oxi otidhpote allo
+		memcpy(data , "E" ,sizeof("E"));
+		data += sizeof("E");
+		counter = 1;
+		memcpy (data , &counter , sizeof(int));
+		data += sizeof(int);
+		memcpy(data ,&null_pointer , sizeof(int));
+		data += sizeof(int);
+		memcpy(data , value1 ,open_files[index].attrLength1);				//
+		data += open_files[index].attrLength1;
+		memcpy(data , &(blocks_n+1) , sizeof(int));
 
-  	// char *data = BF_Block_GetData(block);
+		//ftiaxnoume to prwto block dedomenwn
+		checkBF(BF_AllocateBlock(fileDesc , block));
+		data = BF_Block_GetData(block);
+		// D gia dedomena , einai to anagnwristiko oti prokeitai gia block dedomenwn kai oxi otidhpote allo
+		memcpy(data , "D" , sizeof("D"));
+		data += sizeof("D");
+		memcpy(data , &null_pointer , sizeof(int));
+		data += sizeof(int);
+		memcpy(data , &counter , sizeof(int));
+		data += sizeof(int);
+		memcpy(data , value1 , open_files[index].attrLength1);
+		data += open_files[index].attrLength1;
+		memcpy(data , value2 , open_files[index].attrLength2);
 
-  	/* Initialize both the parent and the first child
-  	of the root to zero (NULL) */
-  	// int tmp = 0;
-  	// for(int i = 0; i < 2*sizeof(int);i++){
-  		// memcpy(data,&tmp,sizeof(char));
-  		// data += sizeof(char);
-  	// }
 
-  	// Insert the key value
-  	// memcpy(data,value1,open_files[index].attrLength1);
-  	
-  	// Point to the newly created child
-  	// data += open_files[index].attrLength1;
-  	// memcpy(data,&(blocks_num+1),sizeof(int));
+	}
 
-  // }
 
   return AME_OK;
 }
