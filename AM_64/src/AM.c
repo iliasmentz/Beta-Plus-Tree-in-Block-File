@@ -265,7 +265,7 @@ int AM_DestroyIndex(char *fileName) {
 
     int status = remove(fileName);
     if(status ==0)
-        printf("File %s deleted", fileName);
+        printf("File %s deleted\n", fileName);
     else
     {
             AM_errno = AME_CANTDESTROY;
@@ -373,23 +373,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data ,&null_pointer , sizeof(int));
 		data += sizeof(int);
-<<<<<<< HEAD
         write_value(open_files[index].attr1, open_files[index].attrLength1, data, value1);
 		data += open_files[index].attrLength1;
 		int tmp = blocks_num + 1;
         memcpy(data , &tmp , sizeof(int));
         BF_Block_SetDirty(block);
         checkBF(BF_UnpinBlock(block));
-=======
-		memcpy(data , value1 ,open_files[index].attrLength1);
-		data += open_files[index].attrLength1;
-		int tmp = blocks_num + 1;
-    memcpy(data , &tmp , sizeof(int));
-		int tmp1 = 0;
-		
-    BF_Block_SetDirty(block);
-    checkBF(BF_UnpinBlock(block));
->>>>>>> 734f02b5367239a36e45d2d9223acd4eb56cb018
 
 
 		//ftiaxnoume to prwto block dedomenwn
@@ -418,7 +407,25 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-  return AME_OK;
+	int i;
+
+	if(openscans == MAXSCANS)
+		return AME_MAXSCANS;
+
+	int scanDesc = -1;
+	for(i = 0 ; i < MAXSCANS; i++)
+	{
+		if(scans[i].fileDesc ==-1)
+			scanDesc = i;
+	}
+
+	scans[scanDesc].fileDesc = fileDesc;
+	scans[scanDesc].op = op;
+	scans[scanDesc].value = value;
+	scans[scanDesc].current = NULL;
+
+	openscans++;
+  	return scanDesc;
 }
 
 
@@ -428,7 +435,12 @@ void *AM_FindNextEntry(int scanDesc) {
 
 
 int AM_CloseIndexScan(int scanDesc) {
-  return AME_OK;
+	if(scans[scanDesc].fileDesc == -1)
+		return AME_SCANCLOSED;
+	openscans--;
+	scans[scanDesc].fileDesc = -1;
+
+	return AME_OK;
 }
 
 

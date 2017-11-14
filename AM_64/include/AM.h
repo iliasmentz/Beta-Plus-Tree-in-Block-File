@@ -11,7 +11,8 @@ extern int AM_errno;
 #define AME_FILEOPEN -3
 #define AME_CANTDESTROY -4
 #define AME_CANTCLOSE -5
-
+#define AME_MAXSCANS -6
+#define AME_SCANCLOSED -7
 
 #define EQUAL 1
 #define NOT_EQUAL 2
