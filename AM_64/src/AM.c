@@ -9,20 +9,13 @@
 ****************************************************/
 
 typedef struct open_file{
-    char filename[60];
-    int fileDesc;
-    char keytype;
-    char datatype;
-  } Open_File;
-
-typedef struct filesArray {
-  char attr1;
-  int attrLength1;
-  char attr2;
-  int attrLength2;
-  int file_d;
-} filesArray;
-
+	char filename[60];
+	int fileDesc;
+	char attr1;
+	int attrLength1;
+	char attr2;
+	int attrLength2;
+} Open_File;
 
 typedef struct Scan{
     int fileDesc;
@@ -90,11 +83,9 @@ int openscans;
 Open_File open_files[MAXFILES];
 Scan scans[MAXSCANS];
 BF_Block * block;
-filesArray *open;
-
 
 /****************************************************
-                ~~Assistan Functions~~
+                ~~Assistant Functions~~
 ****************************************************/
 void checkBF(BF_ErrorCode e)
 {
@@ -123,7 +114,6 @@ int AM_errno = AME_OK;
 void AM_Init() {
     BF_Init(LRU);
     BF_Block_Init(&block);
-    open = (filesArray *)malloc(MAXFILES *sizeof(filesArray));
     openfiles =0;
     openscans =0;
 
@@ -215,60 +205,107 @@ int AM_DestroyIndex(char *fileName) {
     return AME_OK;
 }
 
-  int l =0;
-int AM_OpenIndex (char *fileName) {
 
-  int fd;
-  char *data;
-  char s[100];
-  char n[100];
+int AM_OpenIndex (char *fileName) {	
+  	
+	int fd;
+	checkBF(BF_OpenFile(fileName,&fd));
+	checkBF(BF_GetBlock(fd,0,block));
 
-  int num;
-  checkBF(BF_OpenFile(fileName , &fd));
-  checkBF(BF_GetBlock(fd, 0, block));
-  data = BF_Block_GetData(block);
+	char *data = BF_Block_GetData(block);
 
-  if (memcmp(data, "AM_Index", sizeof("AM_Index"))!=0)
-  {
-      printf("ERROR %s\n", fileName );
-      return -1;
-  }
-  data += sizeof("AM_Index");                     //dokimastika
-  if (l == 0){
-      open[0].attr1 = (*data);
-      printf("EDW %s\n", (data));
-      data += sizeof(char);
-      open[0].attrLength1 = *(int *) data;
-    //   sprintf(s, "%d" , data);
-    //   num = atoi(s);
-    //   printf("%d\n" , num);
-      data += sizeof(int);
-      open[0].attr2 = (*data);
-      data += sizeof(char);
-        //   sprintf(n, "%d" ,data);
-        //   num = atoi(n);
-        //   printf("%d\n",num);
-      open[0].attrLength2 = *(int *) data;
-      open[0].file_d = fd;
-      l =1;
-  }
-  //sprintf(open[0].file_d , "%d" , &fd);
-  printf("%c kai %d kai %c kai %d\n", open[0].attr1 , open[0].attrLength1 , open[0].attr2 , open[0].attrLength2 );
+	if(memcmp(data,"AM_Index",sizeof("AM_Index")) != 0){
+		printf("Error! Wrong type of file\n");
+		return -1;
+	}
+	
 
-  BF_UnpinBlock(block);
+	// Add the opened file to the array
+	Open_File file;
+	strcpy(file.filename,fileName);
+	file.fileDesc = fd;
 
+	data += sizeof("AM_Index");
+	memcpy(&file.attr1,data,sizeof(char));
+	data += sizeof(char);
+	memcpy(&file.attrLength1,data,sizeof(int));
+	data += sizeof(int);
+	memcpy(&file.attr2,data,sizeof(char));
+	data += sizeof(char);
+	memcpy(&file.attrLength2,data,sizeof(int));
 
+	int index = hashfile(fd);
+	open_files[index] = file;
+
+	// Tests to check the function
+	printf("FileName: %s\n",open_files[index].filename);
+	printf("FileDesc: %d\n",open_files[index].fileDesc);
+	printf("Attr1: %c\n",open_files[index].attr1);
+	printf("AttrLength1: %d\n",open_files[index].attrLength1);
+	printf("Attr2: %c\n",open_files[index].attr2);
+	printf("attrLength2: %d\n",open_files[index].attrLength2);
+
+  	BF_UnpinBlock(block);
 
   return AME_OK;
 }
 
 
 int AM_CloseIndex (int fileDesc) {
-  return AME_OK;
+  	
+  	// Locate the position of the file
+	int index = hashfile(fileDesc);
+	
+	if(open_files[index].fileDesc != -1 && 
+		scans[index].fileDesc != -1){
+		printf("Error! Can't remove the file from 'open_files'\n");
+		return AME_FILEEXISTS;
+	}
+
+	// Remove the file
+	open_files[index].fileDesc = -1;
+
+  	return AME_OK;
 }
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
+  
+  // Find the corresponding open file
+  /*int index = hashfile(fileDesc);
+  if(open_files[index] == -1){
+  	printf("Error! File isn't open\n");
+  	return -1;
+  }
+
+  int blocks_num;
+  check(BF_GetBlockCounter(fileDesc,&blocks_num));*/
+
+  /* The file contains only one block,
+  which holds information about it */
+  // if(blocks_num == 1){
+  	// Create the root of the B-plus tree
+  	// checkBF(BF_AllocateBlock(fileDesc,block));
+
+  	// char *data = BF_Block_GetData(block);
+
+  	/* Initialize both the parent and the first child
+  	of the root to zero (NULL) */
+  	// int tmp = 0;
+  	// for(int i = 0; i < 2*sizeof(int);i++){
+  		// memcpy(data,&tmp,sizeof(char));
+  		// data += sizeof(char);
+  	// }
+
+  	// Insert the key value
+  	// memcpy(data,value1,open_files[index].attrLength1);
+  	
+  	// Point to the newly created child
+  	// data += open_files[index].attrLength1;
+  	// memcpy(data,&(blocks_num+1),sizeof(int));
+
+  // }
+
   return AME_OK;
 }
 
