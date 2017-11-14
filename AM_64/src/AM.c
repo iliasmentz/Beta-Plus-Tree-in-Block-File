@@ -281,7 +281,7 @@ int AM_OpenIndex (char *fileName) {
 	printf("Attr1: %c\n",open_files[index].attr1);
 	printf("AttrLength1: %d\n",open_files[index].attrLength1);
 	printf("Attr2: %c\n",open_files[index].attr2);
-	printf("attrLength2: %d\n",open_files[index].attrLength2);
+	printf("attrLength2: %d\n\n",open_files[index].attrLength2);
 
   BF_UnpinBlock(block);
 
@@ -315,6 +315,13 @@ int AM_CloseIndex (int fileDesc) {
   	return AME_OK;
 }
 
+void write_value(char attr, int length, char * data, void * value)
+{
+    if(attr == 'c')
+        strcpy(data, value);
+    else
+        memcpy(data , value , length);
+}
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
@@ -338,12 +345,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data ,&null_pointer , sizeof(int));
 		data += sizeof(int);
-		memcpy(data , value1 ,open_files[index].attrLength1);				//
+        write_value(open_files[index].attr1, open_files[index].attrLength1, data, value1);
 		data += open_files[index].attrLength1;
 		int tmp = blocks_num + 1;
-    memcpy(data , &tmp , sizeof(int));
-    BF_Block_SetDirty(block);
-    checkBF(BF_UnpinBlock(block));
+        memcpy(data , &tmp , sizeof(int));
+        BF_Block_SetDirty(block);
+        checkBF(BF_UnpinBlock(block));
 
 
 		//ftiaxnoume to prwto block dedomenwn
@@ -356,12 +363,14 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data , &counter , sizeof(int));
 		data += sizeof(int);
-		memcpy(data , value1 , open_files[index].attrLength1);
+		// memcpy(data , value1 , open_files[index].attrLength1);
+        write_value(open_files[index].attr1, open_files[index].attrLength1, data, value1);
 		data += open_files[index].attrLength1;
-		memcpy(data , value2 , open_files[index].attrLength2);
-    BF_Block_SetDirty(block);
-    checkBF(BF_UnpinBlock(block));
+		// // memcpy(data , value2 , open_files[index].attrLength2);
+        write_value(open_files[index].attr2, open_files[index].attrLength2, data, value2);
 
+        BF_Block_SetDirty(block);
+        checkBF(BF_UnpinBlock(block));
 	}
 
   return AME_OK;

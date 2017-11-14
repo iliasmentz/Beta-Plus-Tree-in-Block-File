@@ -2,7 +2,7 @@ all: am_main1 am_main2 am_main3 bf_main1 bf_main2 bf_main3
 
 am_main1:
 	@echo " Compile am_main1 ...";
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c -lbf -o ./build/am_main1
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c -lbf -g -o ./build/am_main1
 
 am_main2:
 	@echo " Compile am_main2 ...";
