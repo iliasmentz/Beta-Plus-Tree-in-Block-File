@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define BF_BLOCK_SIZE 512     /* Το μέγεθος ενός block σε bytes */
-#define BF_BUFFER_SIZE 250    /* Ο μέγιστος αριθμός block που κρατάμε στην μνήμη */
+#define BF_BUFFER_SIZE 250     /* Ο μέγιστος αριθμός block που κρατάμε στην μνήμη */
 #define BF_MAX_OPEN_FILES 100 /* Ο μέγιστος αριθμός ανοικτών αρχείων */
 
 typedef enum BF_ErrorCode {
@@ -17,6 +17,7 @@ typedef enum BF_ErrorCode {
   BF_FILE_ALREADY_EXISTS,        /* Το αρχείο δεν μπορεί να δημιουργιθεί γιατι υπάρχει ήδη */
   BF_FULL_MEMORY_ERROR,          /* Η μνήμη έχει γεμίσει με ενεργά block */
   BF_INVALID_BLOCK_NUMBER_ERROR, /* Το block που ζητήθηκε δεν υπάρχει στο αρχείο */
+  BF_AVAILABLE_PIN_BLOCKS_ERROR,
   BF_ERROR
 } BF_ErrorCode;
 
@@ -148,7 +149,7 @@ void BF_PrintError(BF_ErrorCode err);
  * Η συνάρτηση BF_Close κλήνει το επίπεδο Block γράφοντας στον δίσκο όποια
  * block είχε στην μνήμη.
  */
-void BF_Close();
+BF_ErrorCode BF_Close();
 
 #ifdef __cplusplus
 }
