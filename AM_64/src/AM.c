@@ -31,6 +31,57 @@ typedef struct Scan{
     void * current;
 } Scan;
 
+typedef struct stack_node {
+    int fd;
+    struct stack_node * next;
+}stack_node;
+
+typedef struct stack{
+    stack_node * start;
+    stack_node * end;
+    int size;
+}stack;
+
+stack * create_stack()
+{
+    stack * s = malloc(sizeof(stack));
+    stack->start = NULL;
+    stack->end = NULL;
+    stack->size = 0;
+    return s;
+}
+
+stack_node * create_node(int fd)
+{
+    stack_node * node = malloc(sizeof(stack_node));
+    node->fd = fd;
+    node->next = NULL;
+    return node;
+}
+
+void push(stack * s, int fd)
+{
+    stack_node * node = create_node(fd);
+    if(size==0)
+    {
+        s->start = node;
+        s->end = node;
+    }
+    else
+    {
+        s->end->next = node;
+        s->end = node;
+    }
+    s->size ++;
+}
+
+int pop(stack *s)
+{
+    if(s->size ==0)
+        return -1;
+
+    
+}
 /****************************************************
                 ~~Global Variables~~
 ****************************************************/
