@@ -24,6 +24,98 @@ typedef struct Scan{
     void * current;
 } Scan;
 
+
+/****************************************************
+        ~~Our Stack for keeping Parents~~
+****************************************************/
+
+/*  Definitions */
+typedef struct stack_node {
+    int block_num;
+    struct stack_node * next;
+}stack_node;
+
+typedef struct stack{
+    stack_node * start;
+    stack_node * end;
+    int size;
+}stack;
+
+/* Functions */
+stack * create_stack()
+{
+    /* create/initialize empty stack */
+    stack * s = malloc(sizeof(stack));
+    s->start = NULL;
+    s->end = NULL;
+    s->size = 0;
+
+    return s;
+}
+
+stack_node * create_node(int block_num)
+{
+    /* Create a node with the value we need */
+    stack_node * node = malloc(sizeof(stack_node));
+    node->block_num = block_num;
+    node->next = NULL;
+
+    return node;
+}
+
+void push(stack * s, int block_num)
+{
+    /* Create a node with the value we need */
+    stack_node * node = create_node(block_num);
+    if(s->size==0)
+    {   /*first element in stack*/
+        s->start = node;
+        s->end = node;
+    }
+    else
+    {   /*N-th element in stack*/
+        s->end->next = node;
+        s->end = node;
+    }
+    s->size ++;
+}
+
+int pop(stack *s)
+{
+    /*stack is empty or we are on the root*/
+    if(s->size ==0)
+        return -1;
+
+    /*find the pre-last*/
+    stack_node * temp = s->start;
+    int i;
+    for (i=1 ; i <s->size -1; i++)
+        temp = temp->next;
+
+    /*store the last one and pop from stack*/
+    stack_node * poped = s->end;
+    s->end = temp;
+
+    /*get the block number value*/
+    int num = poped->block_num;
+    /*free the node that poped*/
+    free(poped);
+    s->size--;
+    if(s->size ==0)
+        s->start = NULL;
+
+    /*return the value*/
+    return num;
+}
+
+void clean_stack(stack * s)
+{
+    /*pop until the stack is empty*/
+    while(pop(s)!=-1){}
+    free(s);
+}
+
+
 /****************************************************
                 ~~Global Variables~~
 ****************************************************/
@@ -206,16 +298,15 @@ int AM_CloseIndex (int fileDesc) {
 	int index = hashfile(fileDesc);
 
 	if(open_files[index].fileDesc == -1){
-		printf("Error! An open version of the file");
-		printf(" doesn't exist\n");
-		return AME_FILEEXISTS;
+		printf("Error! File is not Open\n");
+		return AME_CANTCLOSE;
 	}
 
 	// Check whether there are any open scans
 	for(int i = 0; i < MAXSCANS; i++){
-		if(scans[index].fileDesc != -1){
+		if(scans[i].fileDesc == index){
 			printf("Error! There are open scans for the file\n");
-			return AME_FILEEXISTS;
+			return AME_CANTCLOSE;
 		}
 	}
 
@@ -229,6 +320,7 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
+<<<<<<< HEAD
 	int index = hashfile(fileDesc);
 	int blocks_n;
 	char *data;
@@ -270,6 +362,42 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 	}
 
+=======
+  // Find the corresponding open file
+  /*int index = hashfile(fileDesc);
+  if(open_files[index] == -1){
+  	printf("Error! File isn't open\n");
+  	return -1;
+  }
+
+  int blocks_num;
+  check(BF_GetBlockCounter(fileDesc,&blocks_num));*/
+
+  /* The file contains only one block,
+  which holds information about it */
+  // if(blocks_num == 1){
+  	// Create the root of the B-plus tree
+  	// checkBF(BF_AllocateBlock(fileDesc,block));
+
+  	// char *data = BF_Block_GetData(block);
+
+  	/* Initialize both the parent and the first child
+  	of the root to zero (NULL) */
+  	// int tmp = 0;
+  	// for(int i = 0; i < 2*sizeof(int);i++){
+  		// memcpy(data,&tmp,sizeof(char));
+  		// data += sizeof(char);
+  	// }
+
+  	// Insert the key value
+  	// memcpy(data,value1,open_files[index].attrLength1);
+
+  	// Point to the newly created child
+  	// data += open_files[index].attrLength1;
+  	// memcpy(data,&(blocks_num+1),sizeof(int));
+
+  // }
+>>>>>>> c692dc46ea672b83d0481128ceea8cfea91ede86
 
   return AME_OK;
 }
