@@ -137,6 +137,34 @@ void checkBF(BF_ErrorCode e)
     }
 }
 
+int CompareKeys (void *ptr1 , void *ptr2 , char type)
+{
+	if (type == 'c')
+	{
+		char * a = (char *) ptr1;
+		char *b = (char *) ptr2;
+		return strcmp(a , b);
+	}
+	if (type == 'i')
+	{
+		int a = *(int *) ptr1;
+		int b = *(int *) ptr2;
+		return a-b;
+
+	}
+	else
+		{
+			float a = *(float *) ptr1;
+			float b = *(float *) ptr2;
+			if (a-b < 0.0)
+				return -1;
+			else if(a-b > 0.0)
+					return 1;
+			else
+					return 0;
+		}
+}
+
 /*Upon successful completion, the open function shall open the file and return
 a non-negative integer representing the lowest numbered unused file descriptor.
 By this way, */
@@ -345,12 +373,23 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 		data += sizeof(int);
 		memcpy(data ,&null_pointer , sizeof(int));
 		data += sizeof(int);
+<<<<<<< HEAD
         write_value(open_files[index].attr1, open_files[index].attrLength1, data, value1);
 		data += open_files[index].attrLength1;
 		int tmp = blocks_num + 1;
         memcpy(data , &tmp , sizeof(int));
         BF_Block_SetDirty(block);
         checkBF(BF_UnpinBlock(block));
+=======
+		memcpy(data , value1 ,open_files[index].attrLength1);
+		data += open_files[index].attrLength1;
+		int tmp = blocks_num + 1;
+    memcpy(data , &tmp , sizeof(int));
+		int tmp1 = 0;
+		
+    BF_Block_SetDirty(block);
+    checkBF(BF_UnpinBlock(block));
+>>>>>>> 734f02b5367239a36e45d2d9223acd4eb56cb018
 
 
 		//ftiaxnoume to prwto block dedomenwn
@@ -372,6 +411,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
         BF_Block_SetDirty(block);
         checkBF(BF_UnpinBlock(block));
 	}
+
 
   return AME_OK;
 }
