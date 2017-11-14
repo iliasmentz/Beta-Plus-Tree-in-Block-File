@@ -297,13 +297,21 @@ int AM_CloseIndex (int fileDesc) {
   	// Locate the position of the file
 	int index = hashfile(fileDesc);
 
-	if(open_files[index].fileDesc != -1 &&
-		scans[index].fileDesc != -1){
-		printf("Error! Can't remove the file from 'open_files'\n");
-		return AME_FILEEXISTS;
+	if(open_files[index].fileDesc == -1){
+		printf("Error! File is not Open\n");
+		return AME_CANTCLOSE;
 	}
 
-	// Remove the file
+	// Check whether there are any open scans
+	for(int i = 0; i < MAXSCANS; i++){
+		if(scans[i].fileDesc == index){
+			printf("Error! There are open scans for the file\n");
+			return AME_CANTCLOSE;
+		}
+	}
+
+	/* Everything's fine,
+		remove the file */
 	open_files[index].fileDesc = -1;
 
   	return AME_OK;

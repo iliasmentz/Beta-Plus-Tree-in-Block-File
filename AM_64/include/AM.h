@@ -10,6 +10,7 @@ extern int AM_errno;
 #define AME_FILEEXISTS -2
 #define AME_FILEOPEN -3
 #define AME_CANTDESTROY -4
+#define AME_CANTCLOSE -5
 
 
 #define EQUAL 1
