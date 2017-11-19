@@ -364,7 +364,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 	 if ( (attrType1 == 'i' && attrLength1!=sizeof(int)) || (attrType2 == 'i' && attrLength2!=sizeof(int)) ||
 	 (attrType1 == 'f' && attrLength1!=sizeof(float)) || (attrType2 == 'f' && attrLength2!=sizeof(float)) )
 	 {
-			 AM_errno = -1;
+			 AM_errno = AME_WRONG_TYPES;
 			 return AM_errno;
 	 }
 
@@ -418,7 +418,6 @@ int AM_DestroyIndex(char *fileName) {
 						if(strcmp(fileName, open_files[i].filename)==0)
 						{
 								AM_errno = AME_FILEOPEN;
-								fprintf(stderr, "Can't Delete! File is open\n");
 								return AM_errno;
 						}
 				}
@@ -426,13 +425,15 @@ int AM_DestroyIndex(char *fileName) {
 
 		int status = remove(fileName);
 		if(status ==0)
-				printf("File %s deleted", fileName);
+		{
+				printf("File %s deleted\n", fileName);
+				return AME_OK;
+		}
 		else
 		{
 						AM_errno = AME_CANTDESTROY;
-						fprintf(stderr, "Can't Destroy the file for some reason\n" );
+						return AME_OK;
 		}
-		return AME_OK;
 }
 
 
@@ -482,14 +483,14 @@ int AM_CloseIndex (int fileDesc) {
 
 	if(open_files[index].fileDesc == -1){
 		printf("Error! File is not Open\n");
-		return AME_CANTCLOSE;
+		return AME_FILENOTOPEN;
 	}
 
 	// Check whether there are any open scans
 	for(int i = 0; i < MAXSCANS; i++){
 		if(scans[i].fileDesc == index){
 			printf("Error! There are open scans for the file\n");
-			return AME_CANTCLOSE;
+			return AME_SCANOPEN;
 		}
 	}
 
@@ -1126,7 +1127,33 @@ int AM_CloseIndexScan(int scanDesc) {
 
 
 void AM_PrintError(char *errString) {
+	printf("%s", errString);
+	switch (AM_errno) {
+		case AME_WRONG_TYPES:
+			printf("Wrong Data-types Sizes! \n" );
+			break;
+		case AME_FILEEXISTS:
+			printf("File Exists!\n" );
+			break;
+		case AME_FILEOPEN:
+			printf("File is open!\n");
+			break;
+		case AME_CANTDESTROY:
+			printf("Remove Failed!\n" );
+			break;
+		case AME_MAXSCANS:
+			printf("Max number of scans are already open\n");
+			break;
+		case AME_SCANOPEN:
+			printf("Scan is open!\n" );
+			break;
+		case AME_FILENOTOPEN:
+			printf("File is not open!\n");
+			break;
 
+	}
+
+	AM_errno = AME_OK;
 }
 
 void AM_Close() {
