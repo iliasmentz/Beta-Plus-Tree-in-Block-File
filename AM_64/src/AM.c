@@ -17,11 +17,21 @@ typedef struct open_file{
 	int attrLength2;
 } Open_File;
 
+typedef struct scan_point{
+	void * value1;
+	void * value2;
+	int block_num;
+	int record_num;
+	int max_record;
+	int next_block;
+}scan_point;
+
+
 typedef struct Scan{
     int fileDesc;
     int op;
     void * value;
-    void * current;
+    scan_point * current;
 } Scan;
 
 
@@ -173,9 +183,199 @@ int hashfile(int fd)
     return fd%MAXFILES;
 }
 
+void write_value(char attr, int length, char * data, void * value)
+{
+    if(attr == 'c')
+        strcpy(data, value);
+    else
+        memcpy(data , value , length);
+}
+
+void read_value(char * data, void * value, int length)
+{
+	value = malloc(length);
+	memcpy(value, data , length);
+}
+
+void read_int_value(char * data, int * num)
+{
+	memcpy(num, data, sizeof(int));
+}
+
 
 /****************************************************
-                ~~AM FUNCTIONS~~
+            ~~Scan Assistant Functions~~
+****************************************************/
+
+scan_point * get_most_left(int fileDesc)
+{
+	int root = open_files[hashfile(fileDesc)].root;
+	int kid, counter;
+	// get_blocks_left(root)
+	checkBF(BF_GetBlock(fileDesc, root, block));
+	char * data = BF_Block_GetData(block);
+
+	while(*data == 'E')
+	{
+		data += sizeof(char);
+		read_int_value(data, &counter);
+		data += sizeof(int);
+
+		if (counter ==0)
+		{
+			printf("ERROR IN BLOCK\n" );
+			exit(EXIT_FAILURE);
+		}
+
+		read_int_value(data, &kid);
+		data += sizeof(int);
+		if(kid == -1)
+		{
+			data += open_files[hashfile(fileDesc)].attrLength1;
+			read_int_value(data, &kid);
+		}
+		checkBF(BF_UnpinBlock(block));
+		checkBF(BF_GetBlock(fileDesc, kid, block));
+		data = BF_Block_GetData(block);
+	}
+
+	if(*data != 'D')
+	{
+		printf("FUCKING ERROR GG BOYS\n" );
+		exit(EXIT_FAILURE);
+	}
+
+	data += sizeof(char);
+	int next;
+	read_int_value(data, &next);
+	data += sizeof(int);
+	read_int_value(data, &counter);
+	data += sizeof(int);
+
+	scan_point * current;
+	current = malloc(sizeof(scan_point));
+	read_value(data, current->value1, open_files[hashfile(fileDesc)].attrLength1);
+	data += open_files[hashfile(fileDesc)].attrLength1;
+	read_value(data, current->value2, open_files[hashfile(fileDesc)].attrLength2);
+
+	current->block_num = kid;
+	current->record_num = 0;
+	current->max_record = counter;
+	current->next_block = next;
+
+	checkBF(BF_UnpinBlock(block));
+
+
+	return current;
+}
+
+void scan_get_next_value(scan_point * p, int fileDesc)
+{
+	if(p->record_num == p->max_record)
+	{/* go the next block */
+		if(p->next_block == -1)
+		{
+			free(p->value1);
+			free(p->value2);
+			p->value1 = NULL;
+			p->value1 = NULL;
+			return;
+		}
+		checkBF(BF_GetBlock(fileDesc, p->next_block, block));
+		char * data = BF_Block_GetData(block);
+
+		if(*data != 'D')
+		{
+			printf("FUCKING ERROR GG BOYS\n" );
+			exit(EXIT_FAILURE);
+		}
+
+		data += sizeof(char);
+		int next;
+		read_int_value(data, &next);
+		data += sizeof(int);
+		int counter ;
+		read_int_value(data, &counter);
+		data += sizeof(int);
+
+		free(p->value1);
+		read_value(data, p->value1, open_files[hashfile(fileDesc)].attrLength1);
+		data += open_files[hashfile(fileDesc)].attrLength1;
+		free(p->value2);
+		read_value(data, p->value2, open_files[hashfile(fileDesc)].attrLength2);
+
+
+		p->block_num = p->next_block;
+		p->record_num = 0;
+		p->next_block = next;
+		p->max_record = counter;
+
+		checkBF(BF_UnpinBlock(block));
+	}
+	else
+	{
+		checkBF(BF_GetBlock(fileDesc, p->block_num, block));
+		char * data = BF_Block_GetData(block);
+
+		int size_of_record = open_files[hashfile(fileDesc)].attrLength1 + open_files[hashfile(fileDesc)].attrLength2;
+
+		data += sizeof(char);
+		data += (2*sizeof(int));
+		data += (p->record_num*size_of_record);
+
+		p->record_num ++;
+		free(p->value1);
+		read_value(data, p->value1, open_files[hashfile(fileDesc)].attrLength1);
+		data += open_files[hashfile(fileDesc)].attrLength1;
+		free(p->value2);
+		read_value(data, p->value2, open_files[hashfile(fileDesc)].attrLength2);
+
+		checkBF(BF_UnpinBlock(block));
+	}
+}
+
+int scan_check(void * main_value, int op, void * current_value, char type)
+{
+	if(current_value == NULL)
+		return -1;
+
+	int result = CompareKeys(main_value, current_value, type);
+
+	switch (op) {
+		case EQUAL:
+			if (result == 0)
+				return 1;
+			return -1;
+		case NOT_EQUAL:
+			if(result == 0)
+				return 0;
+			return 1;
+		case LESS_THAN:
+			if(result >0)
+				return 1;
+			return -1;
+		case GREATER_THAN:
+			if(result < 0)
+				return 1;
+			else if( result == 0)
+				return 0;
+		case LESS_THAN_OR_EQUAL:
+			if(result >= 0)
+				return 1;
+			return -1;
+		case GREATER_THAN_OR_EQUAL:
+			if(result <= 0)
+				return 1;
+			return 0;
+		default:
+			printf("ERROR IN OPERATOR\n" );
+			return -1;
+	}
+
+
+}
+/****************************************************
+                ~~AM Functions~~
 ****************************************************/
 
 int AM_errno = AME_OK;
@@ -343,14 +543,6 @@ int AM_CloseIndex (int fileDesc) {
   	return AME_OK;
 }
 
-void write_value(char attr, int length, char * data, void * value)
-{
-    if(attr == 'c')
-        strcpy(data, value);
-    else
-        memcpy(data , value , length);
-}
-
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 	int index = hashfile(fileDesc);
@@ -422,15 +614,43 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 	scans[scanDesc].fileDesc = fileDesc;
 	scans[scanDesc].op = op;
 	scans[scanDesc].value = value;
-	scans[scanDesc].current = NULL;
+	if((op == NOT_EQUAL) || (op == LESS_THAN) || (op == GREATER_THAN))
+		scans[scanDesc].current = get_most_left(fileDesc);
 
 	openscans++;
   	return scanDesc;
 }
 
 
-void *AM_FindNextEntry(int scanDesc) {
 
+void *AM_FindNextEntry(int scanDesc){
+	Scan * my_scan = &scans[scanDesc];
+	void * return_value;
+
+
+	int result = scan_check(my_scan->value, my_scan->op, my_scan->current->value1, open_files[my_scan->fileDesc].attr1);
+	if(result == 0)
+   	{
+   		while(result ==0)
+		{
+  	   		scan_get_next_value(my_scan->current, my_scan->fileDesc);
+			result = scan_check(my_scan->value, my_scan->op, my_scan->current->value1, open_files[my_scan->fileDesc].attr1);
+		}
+   	}
+
+
+	if(result == -1)
+	{
+		my_scan->current->value1 = NULL;
+		return_value = NULL;
+	}
+	else
+	{
+		return_value = my_scan->current->value2;
+		scan_get_next_value(my_scan->current, my_scan->fileDesc);
+	}
+
+	return return_value;
 }
 
 
@@ -439,6 +659,9 @@ int AM_CloseIndexScan(int scanDesc) {
 		return AME_SCANCLOSED;
 	openscans--;
 	scans[scanDesc].fileDesc = -1;
+	free(scans[scanDesc].current->value1);
+	free(scans[scanDesc].current->value2);
+	free(scans[scanDesc].current);
 
 	return AME_OK;
 }
