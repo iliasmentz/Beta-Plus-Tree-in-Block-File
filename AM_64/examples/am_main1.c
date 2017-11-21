@@ -2,7 +2,7 @@
  *  main2-1.c                                                                   *
  *  Το αρχείο αυτό προσομοιώνει τον ρόλο ενός υψηλότερου-επιπέδου αρθρώματος    *
  *  ενός ΣΔΒΔ το οποίο καλεί συναρτήσεις του επιπέδου που ασχολείται με  τον    *
- *  χειρισμό b+-δένδρων (ΒΔ). Η προσοχή του αρχείου επικεντρώνεται              *
+ *  χειρισμό b+-δένδρων (ΒΔ). Η προσοχή του αρχείου επικεντρώνεται              * 
  *  στην δημιουργία ΒΔ δένδρων και στην εισαγωγή και αναζήτηση εγγραφών         *
  ********************************************************************************/
 
@@ -1091,13 +1091,13 @@ int main() {
 	/********************************************************************************
 	 *  Εύρεση της πρώτης εγγραφής με όνομα "KOKKINOS ARISTOTELHS"                  *
 	 ********************************************************************************/
-	// if ((ivalue = (int*) AM_FindNextEntry(scan1)) != NULL)
-	// 	printf("%d \n\n", *ivalue);
-	// else {
-	// 	sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n\n",
-	// 			scan1);
-	// 	AM_PrintError(errStr);
-	// }
+	if ((ivalue = (int*) AM_FindNextEntry(scan1)) != NULL)
+		printf("%d \n\n", *ivalue);
+	else {
+		sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n\n",
+				scan1);
+		AM_PrintError(errStr);
+	}
 
 	/********************************************************************************
 	 *  Κλείσιμο της αναζήτησης και του αρχείου ΑΚ                                  *
@@ -1138,14 +1138,14 @@ int main() {
 	/********************************************************************************
 	 *  Σάρωση των σχετικών εγγραφών και εκτύπωση των αντίστοιχων ονομάτων          *
 	 ********************************************************************************/
-	// while ((cvalue = (char*) AM_FindNextEntry(scan1)) != NULL) {
-	// 	printf("'%s'\n", cvalue);
-	// }
-	//
-	// if (AM_errno != AME_EOF) {
-	// 	sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n", scan1);
-	// 	AM_PrintError(errStr);
-	// }
+	while ((cvalue = (char*) AM_FindNextEntry(scan1)) != NULL) {
+		printf("'%s'\n", cvalue);
+	}
+
+	if (AM_errno != AME_EOF) {
+		sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n", scan1);
+		AM_PrintError(errStr);
+	}
 
 	/********************************************************************************
 	 *  Κλείσιμο της αναζήτησης και του αρχείου ΑΚ                                  *
@@ -1185,14 +1185,14 @@ int main() {
 	/********************************************************************************
 	 *  Σάρωση των σχετικών εγγραφών και εκτύπωση των αντίστοιχων ονομάτων          *
 	 ********************************************************************************/
-	// while ((cvalue = (char*) AM_FindNextEntry(scan1)) != NULL) {
-	// 	printf("'%s' \n", cvalue);
-	// }
-	//
-	// if (AM_errno != AME_EOF) {
-	// 	sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n", scan1);
-	// 	AM_PrintError(errStr);
-	// }
+	while ((cvalue = (char*) AM_FindNextEntry(scan1)) != NULL) {
+		printf("'%s' \n", cvalue);
+	}
+
+	if (AM_errno != AME_EOF) {
+		sprintf(errStr, "Error in AM_FindNextEntry called on scan %d \n", scan1);
+		AM_PrintError(errStr);
+	}
 
 	/********************************************************************************
 	 *  Κλείσιμο της αναζήτησης και του αρχείου ΒΔ                                  *
@@ -1232,16 +1232,16 @@ int main() {
 	/********************************************************************************
 	 *  Eύρεση της εγγραφής ANEMONH.                                                *
 	 ********************************************************************************/
-	// if ((ivalue = (int*) AM_FindNextEntry(scan1)) != NULL)
-	// 	printf("%d \n\n", *ivalue);
-	// else if (AM_errno != AME_EOF) {
-	// 	sprintf(errStr, "ANEMONH was not found due to an error");
-	// 	AM_PrintError(errStr);
-	// } else {
-	// 	sprintf(errStr,
-	// 			"ANEMONH was not found... (Note: This is the correct behaviour!)");
-	// 	AM_PrintError(errStr);
-	// }
+	if ((ivalue = (int*) AM_FindNextEntry(scan1)) != NULL)
+		printf("%d \n\n", *ivalue);
+	else if (AM_errno != AME_EOF) {
+		sprintf(errStr, "ANEMONH was not found due to an error");
+		AM_PrintError(errStr);
+	} else {
+		sprintf(errStr,
+				"ANEMONH was not found... (Note: This is the correct behaviour!)");
+		AM_PrintError(errStr);
+	}
 
 	/********************************************************************************
 	 *  Κλείσιμο της αναζήτησης και του αρχείου ΑΚ                                  *
@@ -1260,7 +1260,7 @@ int main() {
 	/********************************************************************************
 	 *  Τέλος του δοκιμαστικού προγράμματος για εισαγωγές/ αναζητήσεις    *
 	 ********************************************************************************/
-
+	 
 	AM_Close();
 
 	return 0;
