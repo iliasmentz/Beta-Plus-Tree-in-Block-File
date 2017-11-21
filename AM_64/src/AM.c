@@ -913,10 +913,15 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 write_value(open_files[index].attr1 , attr1_size , root_data , temp_up);
                 root_data += attr1_size;
                 memcpy(root_data , &currentblock , sizeof(int));
+								checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
                 int newroot;
                 checkBF(BF_GetBlockCounter(fileDesc ,&newroot));
                 newroot--;
+								char* pdata = BF_Block_GetData(temp_block);
+								pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
+								memcpy(data , &newroot , sizeof(int));
                 open_files[index].root = newroot;
+								//checkBF(BF_GetBlock(fileDesc , ))
                 BF_Block_SetDirty(new_root);
                 checkBF(BF_UnpinBlock(new_root));
                 BF_Block_SetDirty(block);
