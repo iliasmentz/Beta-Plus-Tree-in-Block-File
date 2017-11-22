@@ -922,6 +922,8 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
 								memcpy(data , &newroot , sizeof(int));
                 open_files[index].root = newroot;
 								//checkBF(BF_GetBlock(fileDesc , ))
+								BF_Block_SetDirty(temp_block);
+								checkBF(BF_UnpinBlock(temp_block));
                 BF_Block_SetDirty(new_root);
                 checkBF(BF_UnpinBlock(new_root));
                 BF_Block_SetDirty(block);
