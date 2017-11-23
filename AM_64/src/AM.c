@@ -713,9 +713,11 @@ int AM_CloseIndex (int fileDesc) {
 		return AME_OK;
 }
 
+//Ascend function is used to ascend the tree and update the index blocks
+
 void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *to_go_up , void *temp_up )
 {
-    // printf("SPAW\n" );
+
     int thesi;
     int x = pop(s);
     int blocks_num;
@@ -725,8 +727,8 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
     while(1)
     {
         int counter;
-    	char* data;
-        //kathe fora 8a pernw oti kanei pop h stoiva
+    	  char* data;
+        //our stack contains the route we took to descend to a data block
         checkBF(BF_GetBlock(fileDesc , x , block));
         data = BF_Block_GetData(block);
         data += sizeof("E");
@@ -736,6 +738,7 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
         //checkBF(BF_GetBlockCounter( fileDesc , &blocks_num));
         //blocks_num--;
 
+				//the index block has enough space for a new key
         if (counter < max_keys)
         {
             thesi = 0;
@@ -746,8 +749,8 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                     break;
                 else
                 {
-                //metakinw kata ena kleidi kai deikth dhladh ftanw sto epomeno kleidi
-                //mia if akoma an mhn to afhsw na deiksei se thesh pou den exei timh
+                //in this loop we move the data pointer to the key we wish to move
+                //this if statement is used in order to prevent the data to point to memory outside of our block
                     if (thesi == counter)
                         break;
                     data += attr1_size + sizeof(int);
@@ -755,14 +758,15 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 }
             }
 
-            //se auth th fash o data deixnei sto kleidi pou prepei na metakinh8ei
+            //right now the data pointer points at the key we wish to move
+						//this if statement is used to check if our key will go to the last position
+						//if not we have to move the rest keys
             if (thesi != counter)
                 memmove(data + attr1_size + sizeof(int) , data , (counter-thesi)*(attr1_size+sizeof(int)));
             //write_value
             write_value(open_files[index].attr1, attr1_size, data, to_go_up);
             // memcpy(data , to_go_up , attr1_size);
-            //edw vazoume ton ari8mo tou block pou ftiaksame alla den evriska pote to perneis sthn ulopoihsh sou
-            //ekana sthn arxh get BF_GetBlockCounter
+            //also update the block pointer to point at our new data block
             data += attr1_size;
             memcpy(data ,&blocks_num , sizeof(int));
             //====update counter ========////
@@ -778,8 +782,7 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
         }
         else
         {
-            //efoson den exei xwro ftiaxnoume neo block
-            //BF_Block *new_block;
+            //not enough space so we create a new block
             checkBF(BF_AllocateBlock(fileDesc , new_block));
 
             char *new_data;
@@ -787,8 +790,8 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
 
             int newcounter = max_keys/2 -1;
             int newcounter1 = max_keys/2;
-            //o deikths data deixnei sthn prwth 8esh
-            //auth h if ginetai gia na pame ston meso pou anebasoume sthn nea riza
+            //data pointer, points to the first key
+            //find the mid
             if (max_keys%2 == 0)
             {
                 counter = max_keys/2 -1;
@@ -801,8 +804,10 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 memcpy(data - 2*sizeof(int),&newcounter1 , sizeof(int));
                 data += (max_keys/2)*(attr1_size + sizeof(int));
             }
+						//the key that will go to an upper level is stored at temp_up
             read_value(data , &temp_up ,attr1_size);
-            //char *tmdata = data;
+            //create a new index block
+						//and write the metadata
             int currentblock;
             checkBF(BF_GetBlockCounter(fileDesc , &currentblock));
             currentblock--;
@@ -811,30 +816,27 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             memcpy(new_data , &newcounter1 , sizeof(int));
             new_data += sizeof(int);
             data += attr1_size;
+						//move the data from the index block we just split
             memmove(new_data , data , (newcounter1*(attr1_size + sizeof(int)) + sizeof(int)));
-            //tha eisagoume to neo kleidi
-            //kai twra 8a eisagoume to neo kleidi
-            //upen8umizw oti o temp_data deixnei sto kleidi pou 8eloume na metaferoume
-            //kai oti o blocks_num deixnei se poio block vrisketai
+            //time to insert a the new key
+            //Reminder: blocks_num is the number of the new data block we created thus the pointer of our index blocks
+						//and to_go_up is the key
             if(CompareKeys(to_go_up , temp_up ,open_files[index].attr1) < 0)
             {
-                //to kleidi 8a mpei sto aristero paidi
-                //to data ksanadeixnei sto teleytaio ths stoixeio
+                //in this case the new key will go to the left index block
+                //move data pointer to the firsr key
                 data -= (sizeof(int) + 2*attr1_size);
-                //kai twra ton ksanametakinw sto prwto stoixeio
                 data -=((sizeof(int)+attr1_size)*(counter-1));
                 counter ++;
                 memcpy(data-(2*sizeof(int)), &counter, sizeof(int));
                 thesi = 0;
                 while(1)
                 {
-                    //otan mpei edw frontise na mhn ginei ovewright to data
+                    //find where the key should go
                     if (CompareKeys(to_go_up , data , open_files[index].attr1) < 0)
                         break;
                     else
                     {
-                        //na tsekarw ama ksefeugei
-                        //metakinw kata ena kleidi kai deikth dhladh ftanw sto epomeno kleidi
                         if (thesi == counter-1)
                             break;
                         data += attr1_size + sizeof(int);
@@ -842,31 +844,26 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                     }
                 }
 
-                //se auth th fash o data deixnei sto kleidi pou prepei na metakinh8ei
+                //if necessary move the other keys
                 if (thesi != counter-1)
                     memmove(data + attr1_size + sizeof(int) , data , (max_keys-thesi)*(attr1_size+sizeof(int)));
-
+								//finally store the key and the pointer to the new data block
                 write_value(open_files[hashfile(fileDesc)].attr1, attr1_size, data, to_go_up);
-                // memcpy(data , to_go_up , attr1_size);
                 data += attr1_size;
                 memcpy(data ,&blocks_num , sizeof(int) );
 
-                //BF_Block_SetDirty(block);
                 BF_Block_SetDirty(block);
-                //BF_Block_SetDirty(temp_block);
                 BF_Block_SetDirty(new_block);
                 checkBF(BF_UnpinBlock(block));
-                //checkBF(BF_UnpinBlock(temp_block));
                 checkBF(BF_UnpinBlock(new_block));
-                //break;
+
             }
             else
             {
-                //to kleidi 8a mpei sto deksi block
-                //ypen8umizw oti o new_data deikths deixnei ekei pou brisketai o prwtos deikths tou eurethriou
-                //ara metakinw kata sizeof(int) gia na paw sthn prwth eggrafh
-				newcounter1++;
-				memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
+                //in this case the new key will go to the right index blocks
+								//the process is same as above
+								newcounter1++;
+								memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
                 new_data += sizeof(int);
                 thesi = 0;
                 while(1)
@@ -875,7 +872,6 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                         break;
                     else
                     {
-                        //metakinw kata ena kleidi kai deikth dhladh ftanw sto epomeno kleidi
                         if (thesi == newcounter1-1)
                             break;
                         new_data += attr1_size + sizeof(int);
@@ -883,11 +879,10 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                     }
                 }
 
-                //se auth th fash o data deixnei sto kleidi pou prepei na metakinh8ei
+
                 if (thesi == newcounter1-1)
                     memmove(new_data + attr1_size + sizeof(int) , new_data , (max_keys-thesi)*(attr1_size+sizeof(int)));
                 write_value(open_files[hashfile(fileDesc)].attr1, attr1_size, new_data, to_go_up);
-                // memcpy(new_data , to_go_up , attr1_size);
                 data += attr1_size;
                 memcpy(new_data ,&blocks_num , sizeof(int) );
 
@@ -897,6 +892,8 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 checkBF(BF_UnpinBlock(new_block));
                 //break;
             }
+						//if the stack size is 0 it means that the index block we split was the root_data
+						//so we create a new
             if(s->size = 0 )
             {
                 printf("NEA RIZa\n" );
@@ -905,23 +902,28 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 char *root_data = BF_Block_GetData(new_root);
                 memcpy(root_data , "E" ,sizeof("E"));
                 root_data += sizeof("E");
+								//root's counter is 1
                 int h =1;
                 memcpy(root_data , &h , sizeof(int));
                 root_data += sizeof(int);
+								//the left child is the old root
                 memcpy(root_data , &x , sizeof(int));
                 root_data += sizeof(int);
+								//store the keys
                 write_value(open_files[index].attr1 , attr1_size , root_data , temp_up);
                 root_data += attr1_size;
+								//right child of the new root is the the new index block
                 memcpy(root_data , &currentblock , sizeof(int));
 								checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
                 int newroot;
                 checkBF(BF_GetBlockCounter(fileDesc ,&newroot));
                 newroot--;
+								//update the new root at the first block that only contains metadata
 								char* pdata = BF_Block_GetData(temp_block);
 								pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
 								memcpy(data , &newroot , sizeof(int));
+								//and also update the open files array
                 open_files[index].root = newroot;
-								//checkBF(BF_GetBlock(fileDesc , ))
 								BF_Block_SetDirty(temp_block);
 								checkBF(BF_UnpinBlock(temp_block));
                 BF_Block_SetDirty(new_root);
@@ -930,21 +932,22 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 BF_UnpinBlock(block);
                 break;
             }
-            //an ftasoume edw shmainei oti den spasame riza ara prepei na anevoume ki allo
-            //ara ananewnw to kleidi pou prepei na anevasw to opoio einai to tmdata
-            //kai to blocks_num pou to kanw iso me to current block
+            //if we come here it means that the index block we split was not the root
+						//thus we have to update the index block at the upper level
+
+						//pop the stack to get the next block
             x = pop(s);
+						//blocks_num  was the old left child but know will go one level up so
+						//we have to update it
+						//now the block_num is the new index block we created
             blocks_num = currentblock;
-            //fix einai metablhth etsi wste otan kleinei to
+            //read_value uses malloc so we free the memory
     		free(to_go_up);
             read_value(temp_up , &to_go_up, attr1_size);
             free(temp_up);
         }
       }
-      // if(to_go_up !=NULL)
-      //   free(to_go_up);
-      // if(temp_up !=NULL)
-      //   free(temp_up);
+
 }
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
@@ -1127,11 +1130,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 					// Move the pointer to the location of the first entry
 					temp_data += 2*sizeof(int);
 
-					/* metakinw ton deikth sthn 8esh ths eggrafhs h opoia
-					8a metafer8ei sto kainourio block
-					oi prwtes max_data/2 eggrafes 8a meinoun kai oi
-					upoloipes 8a pane sto kainourio
-					*/
+
 					// Move to the location where the split happens
 					// data += (max_data/2)*(record_size);
 					data += ((int)ceil((double)max_data/2.0))*(record_size);
@@ -1192,10 +1191,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
                         }
                     }
 
-					/* sth periptwsh pou to kleidi einai to prwto idio den
-					 xreiazete na kanoume kati epeidh 8a metakinh8ou
-					 n ola sto epomeno block automata
-					*/
+
 
 					/* Distribute half of the original block's entries to
 					 the recently allocated block
@@ -1233,9 +1229,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
                         tmp_counter++;
                         memcpy(data-sizeof(int), &tmp_counter, sizeof(int));
 					}
-					//edw einai h periptwsh pou h eggrafh 8a mpei sto prwto block alla oxi sto telos
-					//ara 8a broume se poia 8esh prepei na mpei gia na parameinei to block taksinomhmeno
-					//h eggrafh 8a mpei sto deutero block
+					
 					else
 					{
                         insert_AvailableSpace(tmp_counter1, temp_data, record_size, value1, value2,  attr1,  attr2, attr1_size, attr2_size);
