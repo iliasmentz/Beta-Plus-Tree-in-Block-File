@@ -302,7 +302,7 @@ scan_point * get_most_left(int fileDesc)
 	int root = open_files[hashfile(fileDesc)].root;
 	int kid, counter;
 
-    /* go to the root */
+    /* go to the5d root */
 	checkBF(BF_GetBlock(fileDesc, root, block));
 	char * data = BF_Block_GetData(block);
 
@@ -861,9 +861,9 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             else
             {
                 //in this case the new key will go to the right index blocks
-								//the process is same as above
-								newcounter1++;
-								memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
+				//the process is same as above
+				newcounter1++;
+							memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
                 new_data += sizeof(int);
                 thesi = 0;
                 while(1)
@@ -894,49 +894,51 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             }
 						//if the stack size is 0 it means that the index block we split was the root_data
 						//so we create a new
-            if(s->size = 0 )
-            {
-                printf("NEA RIZa\n" );
-                BF_Block *new_root;
-                checkBF(BF_AllocateBlock(fileDesc ,new_root));
-                char *root_data = BF_Block_GetData(new_root);
-                memcpy(root_data , "E" ,sizeof("E"));
-                root_data += sizeof("E");
-								//root's counter is 1
-                int h =1;
-                memcpy(root_data , &h , sizeof(int));
-                root_data += sizeof(int);
-								//the left child is the old root
-                memcpy(root_data , &x , sizeof(int));
-                root_data += sizeof(int);
-								//store the keys
-                write_value(open_files[index].attr1 , attr1_size , root_data , temp_up);
-                root_data += attr1_size;
-								//right child of the new root is the the new index block
-                memcpy(root_data , &currentblock , sizeof(int));
-								checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
-                int newroot;
-                checkBF(BF_GetBlockCounter(fileDesc ,&newroot));
-                newroot--;
-								//update the new root at the first block that only contains metadata
-								char* pdata = BF_Block_GetData(temp_block);
-								pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
-								memcpy(data , &newroot , sizeof(int));
-								//and also update the open files array
-                open_files[index].root = newroot;
-								BF_Block_SetDirty(temp_block);
-								checkBF(BF_UnpinBlock(temp_block));
-                BF_Block_SetDirty(new_root);
-                checkBF(BF_UnpinBlock(new_root));
-                BF_Block_SetDirty(block);
-                BF_UnpinBlock(block);
-                break;
-            }
+
             //if we come here it means that the index block we split was not the root
 						//thus we have to update the index block at the upper level
 
 						//pop the stack to get the next block
             x = pop(s);
+			if(x = -1 )
+			{
+				printf("NEA RIZa\n" );
+				checkBF(BF_AllocateBlock(fileDesc ,new_root));
+				char *root_data = BF_Block_GetData(new_root);
+				memcpy(root_data , "E" ,sizeof("E"));
+				root_data += sizeof("E");
+								//root's counter is 1
+				int h =1;
+				memcpy(root_data , &h , sizeof(int));
+				root_data += sizeof(int);
+								//the left child is the old root
+				memcpy(root_data , &x , sizeof(int));
+				root_data += sizeof(int);
+								//store the keys
+				write_value(open_files[index].attr1 , attr1_size , root_data , temp_up);
+				root_data += attr1_size;
+								//right child of the new root is the the new index block
+				memcpy(root_data , &currentblock , sizeof(int));
+								checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
+				int newroot;
+				checkBF(BF_GetBlockCounter(fileDesc ,&newroot));
+				newroot--;
+								//update the new root at the first block that only contains metadata
+								char* pdata = BF_Block_GetData(temp_block);
+								pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
+								memcpy(data , &newroot , sizeof(int));
+								//and also update the open files array
+				open_files[index].root = newroot;
+								BF_Block_SetDirty(temp_block);
+								checkBF(BF_UnpinBlock(temp_block));
+				BF_Block_SetDirty(new_root);
+				checkBF(BF_UnpinBlock(new_root));
+				BF_Block_SetDirty(block);
+				BF_UnpinBlock(block);
+				free(to_go_up);
+				free(temp_up);
+				break;
+			}
 						//blocks_num  was the old left child but know will go one level up so
 						//we have to update it
 						//now the block_num is the new index block we created
@@ -1229,7 +1231,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
                         tmp_counter++;
                         memcpy(data-sizeof(int), &tmp_counter, sizeof(int));
 					}
-					
+
 					else
 					{
                         insert_AvailableSpace(tmp_counter1, temp_data, record_size, value1, value2,  attr1,  attr2, attr1_size, attr2_size);
