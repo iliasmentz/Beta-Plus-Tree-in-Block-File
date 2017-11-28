@@ -5,6 +5,7 @@
 
 #include "AM.h"
 #include "bf.h"
+
 /****************************************************
 				~~Struct Definitions~~
 ****************************************************/
@@ -145,10 +146,10 @@ BF_Block * new_root;
 
 void write_value(char attr, int length, char * data, void * value)
 {
-		if(attr == 'c')
-				strcpy(data, value);
-		else
-				memcpy(data , value , length);
+	if(attr == 'c')
+			strcpy(data, value);
+	else
+			memcpy(data , value , length);
 }
 
 void read_value(char * data, void ** value, int length)
@@ -165,13 +166,15 @@ void read_int_value(char * data, int * num)
 
 void checkBF(BF_ErrorCode e)
 {
-		if(e != BF_OK)
-		{
-				BF_PrintError(e);
-				exit(e);
-		}
+	if(e != BF_OK)
+	{
+			BF_PrintError(e);
+			exit(e);
+	}
 }
 
+/* Compares the values which ptr1 and ptr2
+   point to */
 int CompareKeys (void *ptr1 , void *ptr2 , char type)
 {
 	if (type == 'c')
@@ -180,6 +183,7 @@ int CompareKeys (void *ptr1 , void *ptr2 , char type)
 		char *b = (char *) ptr2;
 		return strcmp(a , b);
 	}
+	
 	if (type == 'i')
 	{
 		int a = *(int *) ptr1;
@@ -187,16 +191,20 @@ int CompareKeys (void *ptr1 , void *ptr2 , char type)
 		return a-b;
 
 	}
+	
 	else
 	{
 		float a = *(float *) ptr1;
 		float b = *(float *) ptr2;
+		
 		if (a-b < 0.0)
 			return -1;
+		
 		else if(a-b > 0.0)
-				return 1;
+			return 1;
+		
 		else
-				return 0;
+			return 0;
 	}
 }
 
@@ -211,16 +219,17 @@ int hashfile(int fd)
 
 
 /* Used while trying to traverse the index blocks
-	of the tree.
-	Helps to find the correct data block, if such a block
-	exists. Otherwise, it returns -1 */
+   of the tree.
+   Helps to find the correct data block, if such a block
+   exists. Otherwise, it returns -1 */
 int getChildBlock(int counter, char *data, int attrLength1,
-	char attr1, void *value1){
-
+	char attr1, void *value1)
+{
 	int current = 0;
 	int block_num;
 
     data += sizeof(int);
+    
     for(int i = 0; i < counter; i++)
     {
         current = CompareKeys(data, value1, attr1);
@@ -232,13 +241,17 @@ int getChildBlock(int counter, char *data, int attrLength1,
         }
         data += (sizeof(int)+attrLength1);
     }
+    
     memcpy(&block_num, data-sizeof(int), sizeof(int));
     return block_num;
 }
 
+/* Finds the block_num for the neighbor of the 
+   recently allocated block and returns it.
+   Also, it changes the key value to the block_num
+   of the new block */
 int writeNums(int counter, char *data, int attrLength1, char attr1, void *value1, int block_num)
 {
-
 	int current = 0;
     int next;
     data += sizeof(int);
@@ -258,25 +271,20 @@ int writeNums(int counter, char *data, int attrLength1, char attr1, void *value1
 
     read_int_value(data-attrLength1-sizeof(int), &next);
     return next;
-
 }
 
 /* Inserts a new entry at a data block which still
-	 has some space left
-*/
+   has some space left */
 void insert_AvailableSpace(int counter, char *data,
 	int record_size,void *value1, void *value2, char attr1, char attr2,
 	int attr1_size, int attr2_size){
 
     /* Find the correct location where we'll insert
-		 the new entry
-	*/
+	   the new entry */
 	for(int i = 0; i < counter; i++)
     {
-
 		/* Move all entries and insert the new one
-			at the front
-		*/
+		   at the front */
 		if(CompareKeys(data, value1,attr1) > 0)
         {
 			memmove(data+record_size, data,(counter-i)*record_size);
@@ -307,14 +315,14 @@ scan_point * get_most_left(int fileDesc)
 	char * data = BF_Block_GetData(block);
 
 	while(*data == 'E')
-	{   /* while you are on index block, find its most left pointer */
+	{   /* While you are at an index block, 
+		   find its leftmost pointer */
 		data += sizeof("E");
 		read_int_value(data, &counter);
 
-        // printf("Counter %d\n", counter );
 		data += sizeof(int);
 
-		if (counter ==0)
+		if(counter ==0)
 		{
 			printf("ERROR IN BLOCK\n" );
 			exit(EXIT_FAILURE);
@@ -323,7 +331,7 @@ scan_point * get_most_left(int fileDesc)
 		read_int_value(data, &kid);
 		data += sizeof(int);
 		if(kid == -1)
-		{   /*his first data has no left kid */
+		{   // His first data has no left kid
 			data += open_files[hashfile(fileDesc)].attrLength1;
 			read_int_value(data, &kid);
 		}
@@ -339,7 +347,7 @@ scan_point * get_most_left(int fileDesc)
 		exit(EXIT_FAILURE);
 	}
 
-    /* go to the first value */
+    // Go to the first value 
 	data += sizeof("D");
 	int next;
 	read_int_value(data, &next);
@@ -347,29 +355,30 @@ scan_point * get_most_left(int fileDesc)
 	read_int_value(data, &counter);
 	data += sizeof(int);
 
-    /* create the scan point */
+    // Create the scan point 
 	scan_point * current;
 	current = malloc(sizeof(scan_point));
-    /* get the 1st value */
+    
+
+    // Get the first value 
 	read_value(data, &current->value1, open_files[hashfile(fileDesc)].attrLength1);
     if(current->value1 == NULL)
     {
         printf("Error in B+Tree Structure \n" );
 		exit(EXIT_FAILURE);
     }
-    /* get the 2nd value */
+    
+    // Get the second value
 	data += open_files[hashfile(fileDesc)].attrLength1;
 	read_value(data, &current->value2, open_files[hashfile(fileDesc)].attrLength2);
 
-    /* write the values we are gonna need */
+    // Write the values we're going to need
 	current->block_num = kid;
 	current->record_num = 0;
 	current->max_record = counter;
 	current->next_block = next;
 
-
 	checkBF(BF_UnpinBlock(block));
-
 
 	return current;
 }
@@ -383,12 +392,13 @@ scan_point * get_value_point(int fileDesc, void * value)
     int counter;
     int kid;
     while(*data == 'E')
-    {   /* while you are on index block, find  the suitable kid */
+    {   /* While you are at an index block, 
+    	   find the suitable child */
         data += sizeof("E");
         read_int_value(data, &counter);
         data += sizeof(int);
 
-        /*move to first kid */
+        // Move to the first child
         kid = getChildBlock(counter, data, open_files[hashfile(fileDesc)].attrLength1, open_files[hashfile(fileDesc)].attr1, value);
         checkBF(BF_UnpinBlock(block));
         checkBF(BF_GetBlock(fileDesc, kid, block));
@@ -401,7 +411,7 @@ scan_point * get_value_point(int fileDesc, void * value)
 		exit(EXIT_FAILURE);
 	}
 
-    /* go to the first value */
+    // Go to the first value 
 	data += sizeof("D");
 	int next;
 	read_int_value(data, &next);
@@ -409,36 +419,40 @@ scan_point * get_value_point(int fileDesc, void * value)
 	read_int_value(data, &counter);
 	data += sizeof(int);
 
-    /* create the scan point */
+    // Create the scan point
 	scan_point * current;
 	current = malloc(sizeof(scan_point));
-    /* get the 1st value */
+    
+    // Get the first value
 	read_value(data, &current->value1, open_files[hashfile(fileDesc)].attrLength1);
     if(current->value1 == NULL)
     {
         printf("Error in B+Tree Structure \n" );
 		exit(EXIT_FAILURE);
     }
-    /* get the 2nd value */
+    
+    // Get the second value
 	data += open_files[hashfile(fileDesc)].attrLength1;
 	read_value(data, &current->value2, open_files[hashfile(fileDesc)].attrLength2);
 
-    /* write the values we are gonna need */
+    // Write the values we are going to need
 	current->block_num = kid;
 	current->record_num = 0;
 	current->max_record = counter;
 	current->next_block = next;
 
-
 	checkBF(BF_UnpinBlock(block));
     return current;
 }
+
+
 void scan_get_next_value(scan_point * p, int fileDesc)
 {
 	if(p->record_num == p->max_record)
-	{/* go the next block */
+	{
+		// Go the next block 
         if(p->next_block == -1)
-		{   /* there is no next block */
+		{   // There isn't a next block
 			free(p->value1);
 			free(p->value2);
 			p->value1 = NULL;
@@ -454,7 +468,7 @@ void scan_get_next_value(scan_point * p, int fileDesc)
 			exit(EXIT_FAILURE);
 		}
 
-        /* get the counter and next and move to data */
+        /* Get both the counter and next and then move to data */
 		data += sizeof("D");
 		int next;
 		read_int_value(data, &next);
@@ -463,14 +477,14 @@ void scan_get_next_value(scan_point * p, int fileDesc)
 		read_int_value(data, &counter);
 		data += sizeof(int);
 
-        /* get the next values */
+        /* Get the next values */
 		free(p->value1);
 		read_value(data, &p->value1, open_files[hashfile(fileDesc)].attrLength1);
 		data += open_files[hashfile(fileDesc)].attrLength1;
 		free(p->value2);
 		read_value(data, &p->value2, open_files[hashfile(fileDesc)].attrLength2);
 
-        /* get the data you need to be ready for the next scan */
+        /* Get the data you need to be ready for the next scan */
 		p->block_num = p->next_block;
 		p->record_num = 1;
 		p->next_block = next;
@@ -479,7 +493,7 @@ void scan_get_next_value(scan_point * p, int fileDesc)
 		checkBF(BF_UnpinBlock(block));
 	}
 	else
-	{   /*take the next data from current block */
+	{   /* Take the next data from current block */
 		checkBF(BF_GetBlock(fileDesc, p->block_num, block));
 		char * data = BF_Block_GetData(block);
 
@@ -489,30 +503,29 @@ void scan_get_next_value(scan_point * p, int fileDesc)
 		data += (2*sizeof(int));
 		data += (p->record_num*size_of_record);
 
-        /* get the next values */
+        /* Get the next values */
 		free(p->value1);
 		read_value(data, &p->value1, open_files[hashfile(fileDesc)].attrLength1);
 		data += open_files[hashfile(fileDesc)].attrLength1;
 		free(p->value2);
 		read_value(data, &p->value2, open_files[hashfile(fileDesc)].attrLength2);
 
-        /* move the record counter to the next record */
+        /* Move the record counter to the next record */
         p->record_num ++;
 
 		checkBF(BF_UnpinBlock(block));
 	}
-    // printf("Getting next values: %f %s \n", *(float * )p->value1,(char *)p->value2 );
 }
 
 int scan_check(void * main_value, int op, void * current_value, char type)
 {
-    /* if our current value is NULL, we reached the end of the search */
+    /* If our current value is NULL, we reached the end of the search */
 	if(current_value == NULL)
     {
         return -1;
     }
 
-    /* compare our main value with the current value */
+    /* Compare our main value with the current value */
 	int result = CompareKeys(main_value, current_value, type);
 
 	switch (op) {
@@ -531,7 +544,6 @@ int scan_check(void * main_value, int op, void * current_value, char type)
 		case GREATER_THAN:
 			if(result < 0)
 				return 1;
-			// else if( result == 0)
 			return 0;
 		case LESS_THAN_OR_EQUAL:
 			if(result >= 0)
@@ -545,8 +557,6 @@ int scan_check(void * main_value, int op, void * current_value, char type)
 			printf("ERROR IN OPERATOR\n" );
 			return -1;
 	}
-
-
 }
 
 /****************************************************
@@ -555,29 +565,32 @@ int scan_check(void * main_value, int op, void * current_value, char type)
 
 int AM_errno = AME_OK;
 
-void AM_Init() {
-		BF_Init(LRU);
-		BF_Block_Init(&block);
-		BF_Block_Init(&temp_block);
-		BF_Block_Init(&new_block);
-		BF_Block_Init(&new_root);
+void AM_Init() 
+{
+	BF_Init(LRU);
+	BF_Block_Init(&block);
+	BF_Block_Init(&temp_block);
+	BF_Block_Init(&new_block);
+	BF_Block_Init(&new_root);
 
-		openfiles =0;
-		openscans =0;
+	openfiles =0;
+	openscans =0;
 
 
-		int i;
-		for ( i=0 ; i<MAXFILES; i++)
-				open_files[i].fileDesc = -1;
-		for(i=0; i<MAXSCANS; i++)
-				scans[i].fileDesc = -1;
+	int i;
+	for ( i=0 ; i<MAXFILES; i++)
+		open_files[i].fileDesc = -1;
+	
+	for(i=0; i<MAXSCANS; i++)
+		scans[i].fileDesc = -1;
+	
 	return;
 }
 
 
 int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrType2, int attrLength2)
 {
-    /*check if the lengths for int and float are valid*/
+    /* Check if the lengths for int and float are valid*/
     if ( (attrType1 == 'i' && attrLength1!=sizeof(int)) || (attrType2 == 'i' && attrLength2!=sizeof(int)) ||
     (attrType1 == 'f' && attrLength1!=sizeof(float)) || (attrType2 == 'f' && attrLength2!=sizeof(float)) )
     {
@@ -617,37 +630,37 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 }
 
 
-int AM_DestroyIndex(char *fileName) {
+int AM_DestroyIndex(char *fileName)
+{
+	int i;
+	for(i=0; i<MAXFILES; i++)
+	{
+		if(open_files[i].fileDesc >= 0)
+		{
+			if(strcmp(fileName, open_files[i].filename)==0)
+			{
+				AM_errno = AME_FILEOPEN;
+				return AM_errno;
+			}
+		}
+	}
 
-		int i;
-		for(i=0; i<MAXFILES; i++)
-		{
-				if(open_files[i].fileDesc >= 0)
-				{
-						if(strcmp(fileName, open_files[i].filename)==0)
-						{
-								AM_errno = AME_FILEOPEN;
-								return AM_errno;
-						}
-				}
-		}
-
-		int status = remove(fileName);
-		if(status ==0)
-		{
-				printf("File %s deleted\n", fileName);
-				return AME_OK;
-		}
-		else
-		{
-						AM_errno = AME_CANTDESTROY;
-						return AME_OK;
-		}
+	int status = remove(fileName);
+	if(status ==0)
+	{
+		printf("File %s deleted\n", fileName);
+		return AME_OK;
+	}
+	else
+	{
+		AM_errno = AME_CANTDESTROY;
+		return AME_OK;
+	}
 }
 
 
-int AM_OpenIndex (char *fileName) {
-
+int AM_OpenIndex (char *fileName)
+{
 	int fd;
 	checkBF(BF_OpenFile(fileName,&fd));
 	checkBF(BF_GetBlock(fd,0,block));
@@ -674,21 +687,14 @@ int AM_OpenIndex (char *fileName) {
     data += sizeof(int);
     read_int_value(data, &open_files[index].root);
 
-	// Tests to check the function
-	// printf("FileName: %s\n",open_files[index].filename);
-	// printf("FileDesc: %d\n",open_files[index].fileDesc);
-	// printf("Attr1: %c\n",open_files[index].attr1);
-	// printf("AttrLength1: %d\n",open_files[index].attrLength1);
-	// printf("Attr2: %c\n",open_files[index].attr2);
-	// printf("attrLength2: %d\n\n",open_files[index].attrLength2);
-
 	BF_UnpinBlock(block);
 
 	return fd;
 }
 
 
-int AM_CloseIndex (int fileDesc) {
+int AM_CloseIndex (int fileDesc)
+{
 
 	int index = hashfile(fileDesc);
 
@@ -699,18 +705,19 @@ int AM_CloseIndex (int fileDesc) {
 
 	// Check whether there are any open scans
 	for(int i = 0; i < MAXSCANS; i++){
-		if(scans[i].fileDesc == index){
+		if(scans[i].fileDesc == index)
+		{
 			printf("Error! There are open scans for the file\n");
 			return AME_SCANOPEN;
 		}
 	}
 
 	/* Everything's fine,
-		remove the file */
+	   remove the file */
 	checkBF(BF_CloseFile(open_files[index].fileDesc));
 	open_files[index].fileDesc = -1;
 
-		return AME_OK;
+	return AME_OK;
 }
 
 //Ascend function is used to ascend the tree and update the index blocks
@@ -727,18 +734,15 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
     while(1)
     {
         int counter;
-    	  char* data;
-        //our stack contains the route we took to descend to a data block
+    	char* data;
+        // Our stack contains the route we took to descend to a data block
         checkBF(BF_GetBlock(fileDesc , x , block));
         data = BF_Block_GetData(block);
         data += sizeof("E");
         memcpy(&counter , data , sizeof(int));
         data += 2*sizeof(int);
-        //kanw to Get_BlockCounter gia na krataw poio einai to neo block
-        //checkBF(BF_GetBlockCounter( fileDesc , &blocks_num));
-        //blocks_num--;
 
-				//the index block has enough space for a new key
+		// The index block has enough space for a new key
         if (counter < max_keys)
         {
             thesi = 0;
@@ -749,8 +753,9 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                     break;
                 else
                 {
-                //in this loop we move the data pointer to the key we wish to move
-                //this if statement is used in order to prevent the data to point to memory outside of our block
+                // In this loop, we move the data pointer to the key we wish to move
+                /* The following if statement is used to prevent the data from 
+                   pointing to a memory area outside of our block */
                     if (thesi == counter)
                         break;
                     data += attr1_size + sizeof(int);
@@ -758,17 +763,19 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 }
             }
 
-            //right now the data pointer points at the key we wish to move
-						//this if statement is used to check if our key will go to the last position
-						//if not we have to move the rest keys
+            // Right now the data pointer points at the key we wish to move
+			// The following if statement is used to check if our key will go to the last position
+			// iIf not, we have to move the rest of the keys
             if (thesi != counter)
                 memmove(data + attr1_size + sizeof(int) , data , (counter-thesi)*(attr1_size+sizeof(int)));
-            //write_value
+            
+            // Write_value
             write_value(open_files[index].attr1, attr1_size, data, to_go_up);
-            // memcpy(data , to_go_up , attr1_size);
-            //also update the block pointer to point at our new data block
+            
+            //Also update the block pointer to point at our new data block
             data += attr1_size;
             memcpy(data ,&blocks_num , sizeof(int));
+            
             //====update counter ========////
             counter++;
             data -= (thesi*(attr1_size + sizeof(int)) + attr1_size +2*sizeof(int));
@@ -780,9 +787,10 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             checkBF(BF_UnpinBlock(block));
             break;
         }
+        
         else
         {
-            //not enough space so we create a new block
+            // Not enough space so we create a new block
             checkBF(BF_AllocateBlock(fileDesc , new_block));
 
             char *new_data;
@@ -790,6 +798,7 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
 
             int newcounter = max_keys/2 -1;
             int newcounter1 = max_keys/2;
+            
             //data pointer, points to the first key
             //find the mid
             if (max_keys%2 == 0)
@@ -804,10 +813,12 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 memcpy(data - 2*sizeof(int),&newcounter1 , sizeof(int));
                 data += (max_keys/2)*(attr1_size + sizeof(int));
             }
-						//the key that will go to an upper level is stored at temp_up
+			
+			//the key that will go to an upper level is stored at temp_up
             read_value(data , &temp_up ,attr1_size);
+            
             //create a new index block
-						//and write the metadata
+			//and write the metadata
             int currentblock;
             checkBF(BF_GetBlockCounter(fileDesc , &currentblock));
             currentblock--;
@@ -816,11 +827,13 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             memcpy(new_data , &newcounter1 , sizeof(int));
             new_data += sizeof(int);
             data += attr1_size;
-						//move the data from the index block we just split
+			
+			//move the data from the index block we just split
             memmove(new_data , data , (newcounter1*(attr1_size + sizeof(int)) + sizeof(int)));
+            
             //time to insert a the new key
             //Reminder: blocks_num is the number of the new data block we created thus the pointer of our index blocks
-						//and to_go_up is the key
+			//and to_go_up is the key
             if(CompareKeys(to_go_up , temp_up ,open_files[index].attr1) < 0)
             {
                 //in this case the new key will go to the left index block
@@ -847,7 +860,7 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 //if necessary move the other keys
                 if (thesi != counter-1)
                     memmove(data + attr1_size + sizeof(int) , data , (max_keys-thesi)*(attr1_size+sizeof(int)));
-								//finally store the key and the pointer to the new data block
+				//finally store the key and the pointer to the new data block
                 write_value(open_files[hashfile(fileDesc)].attr1, attr1_size, data, to_go_up);
                 data += attr1_size;
                 memcpy(data ,&blocks_num , sizeof(int) );
@@ -861,9 +874,9 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
             else
             {
                 //in this case the new key will go to the right index blocks
-								//the process is same as above
-								newcounter1++;
-								memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
+				//the process is same as above
+				newcounter1++;
+				memcpy(new_data - sizeof(int),&newcounter1,sizeof(int) );
                 new_data += sizeof(int);
                 thesi = 0;
                 while(1)
@@ -882,6 +895,7 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
 
                 if (thesi == newcounter1-1)
                     memmove(new_data + attr1_size + sizeof(int) , new_data , (max_keys-thesi)*(attr1_size+sizeof(int)));
+                
                 write_value(open_files[hashfile(fileDesc)].attr1, attr1_size, new_data, to_go_up);
                 data += attr1_size;
                 memcpy(new_data ,&blocks_num , sizeof(int) );
@@ -890,10 +904,10 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 BF_Block_SetDirty(new_block);
                 checkBF(BF_UnpinBlock(block));
                 checkBF(BF_UnpinBlock(new_block));
-                //break;
             }
-						//if the stack size is 0 it means that the index block we split was the root_data
-						//so we create a new
+			
+			//if the stack size is 0 it means that the index block we split was the root_data
+			//so we create a new
             if(s->size = 0 )
             {
                 printf("NEA RIZa\n" );
@@ -902,55 +916,56 @@ void Ascend(stack *s ,int fileDesc,int index,int max_keys,int attr1_size, void *
                 char *root_data = BF_Block_GetData(new_root);
                 memcpy(root_data , "E" ,sizeof("E"));
                 root_data += sizeof("E");
-								//root's counter is 1
+				//root's counter is 1
                 int h =1;
                 memcpy(root_data , &h , sizeof(int));
                 root_data += sizeof(int);
-								//the left child is the old root
+				//the left child is the old root
                 memcpy(root_data , &x , sizeof(int));
                 root_data += sizeof(int);
-								//store the keys
+				//store the keys
                 write_value(open_files[index].attr1 , attr1_size , root_data , temp_up);
                 root_data += attr1_size;
-								//right child of the new root is the the new index block
+				//right child of the new root is the the new index block
                 memcpy(root_data , &currentblock , sizeof(int));
-								checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
+				checkBF(BF_GetBlock(fileDesc ,0 ,temp_block ));
                 int newroot;
                 checkBF(BF_GetBlockCounter(fileDesc ,&newroot));
                 newroot--;
-								//update the new root at the first block that only contains metadata
-								char* pdata = BF_Block_GetData(temp_block);
-								pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
-								memcpy(data , &newroot , sizeof(int));
-								//and also update the open files array
+				//update the new root at the first block that only contains metadata
+				char* pdata = BF_Block_GetData(temp_block);
+				pdata += sizeof("AM_Index") + 2*sizeof(int) +2*sizeof(char);
+				memcpy(data , &newroot , sizeof(int));
+				//and also update the open files array
                 open_files[index].root = newroot;
-								BF_Block_SetDirty(temp_block);
-								checkBF(BF_UnpinBlock(temp_block));
+				BF_Block_SetDirty(temp_block);
+				checkBF(BF_UnpinBlock(temp_block));
                 BF_Block_SetDirty(new_root);
                 checkBF(BF_UnpinBlock(new_root));
                 BF_Block_SetDirty(block);
                 BF_UnpinBlock(block);
                 break;
             }
+            
             //if we come here it means that the index block we split was not the root
-						//thus we have to update the index block at the upper level
+			//thus we have to update the index block at the upper level
 
-						//pop the stack to get the next block
+			//pop the stack to get the next block
             x = pop(s);
-						//blocks_num  was the old left child but know will go one level up so
-						//we have to update it
-						//now the block_num is the new index block we created
+			//blocks_num  was the old left child but know will go one level up so
+			//we have to update it
+			//now the block_num is the new index block we created
             blocks_num = currentblock;
             //read_value uses malloc so we free the memory
     		free(to_go_up);
             read_value(temp_up , &to_go_up, attr1_size);
             free(temp_up);
         }
-      }
-
+    }
 }
 
-int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
+int AM_InsertEntry(int fileDesc, void *value1, void *value2)
+{
     for(int i =0 ; i <MAXSCANS ; i++)
     {
         if(scans[i].fileDesc == fileDesc)
@@ -959,7 +974,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
         }
     }
 
-    // printf("Adding %d\n",*(int *)value1 );
 	void * to_go_up;
 	void * temp_up;
 
@@ -1120,38 +1134,44 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 					memcpy(temp_data, "D", sizeof("D"));
 					temp_data += sizeof("D");
 
-					// **This only applies when the original block doesn't have any neighbors**
-					// **The new block acquires the neighbor of the original block as its own**
+					/* The neighbor of the recently allocated block is the one 
+					   that the original block used to have 
+					*/
 					memcpy(temp_data , data-(2*sizeof(int)) , sizeof(int));
-                    checkBF(BF_GetBlockCounter(fileDesc , &blocks_num));
-                    blocks_num--;
+                    
+                    /* The neighbor of the original block must be switched 
+                       with the block_num of the recently allocated block.
+                       That block_num is equal to the initial blocks_num
+                   	*/
                     memcpy(data-(2*sizeof(int)), &blocks_num, sizeof(int));
 
 					// Move the pointer to the location of the first entry
 					temp_data += 2*sizeof(int);
 
 
-					// Move to the location where the split happens
-					// data += (max_data/2)*(record_size);
-					data += ((int)ceil((double)max_data/2.0))*(record_size);
+					data += (max_data/2)*record_size;
 
-					/*These two counters are used to keep track of the number
-					of entries that will go to each block */
+					/* These two counters are used to keep track of the number
+					   of entries that will go to each block 
+					*/
+					int tmp_counter = max_data/2;
+					int tmp_counter1 = max_data - tmp_counter;
 
-					// int tmp_counter = max_data/2;
-					int tmp_counter = (int)ceil((double)max_data/(2.0));
-					int tmp_counter1 = max_data - (int)ceil((double)max_data/2.0);
-
+					if(max_data%2==1){
+						int a = CompareKeys(data,value1,attr1);
+						if(a < 0){
+							data += record_size;
+							tmp_counter++;
+							tmp_counter1--;
+						}
+					}
 
 					/********************************************************
 					Entries which share the same key must not be seperated
 					********************************************************/
 					/* Check to see whether the key is the same as both the
-					 previous one and the next one
+					   previous one and the next one
 					*/
-
-					// What if the pointer is pointing at the last entry??
-					// NEEDS A COUNTER (maybe)
 
                     if(CompareKeys(data, data-record_size, attr1)==0)
                     {
@@ -1197,19 +1217,10 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 					 the recently allocated block
 					*/
 					memmove(temp_data, data, tmp_counter1*record_size);
-					/*for (int j = tmp_counter; j < max_data;  j++)
-					{
-    					write_value(attr1 ,attr1_size ,temp_data , data);
-    					data += attr1_size;
-    					temp_data += attr1_size;
-    					write_value(attr2 , attr1_size , temp_data , data);
-    					data += attr2_size;
-    					temp_data += attr2_size;
-					}*/
 
-					// Move both pointers to the first entry of each block
+					// Make both pointers point to the first entry of each block
 					data -= (tmp_counter)*record_size;
-					//temp_data -= (tmp_counter1)*record_size;
+                    
                     memcpy(data-sizeof(int), &tmp_counter, sizeof(int));
                     memcpy(temp_data-sizeof(int), &tmp_counter1, sizeof(int));
 
@@ -1217,11 +1228,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 					 If value1 is greater than the value pointed at
 					 by temp_data,then we must push it to
 					 the original block.
-					*/
-
-					/* The original block has less than half the entries
-					 it's supposed to have.
-					 Insert the new entry there
 					*/
 					if(CompareKeys(temp_data , value1 , attr1) > 0)
 					{
@@ -1264,7 +1270,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 }
 
 
-int AM_OpenIndexScan(int fileDesc, int op, void *value) {
+int AM_OpenIndexScan(int fileDesc, int op, void *value)
+{
     int i;
 
 	if(openscans == MAXSCANS)
@@ -1290,7 +1297,8 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 }
 
 
-void *AM_FindNextEntry(int scanDesc) {
+void *AM_FindNextEntry(int scanDesc)
+{
     Scan * my_scan = &scans[scanDesc];
 	void * return_value;
 
@@ -1322,7 +1330,6 @@ void *AM_FindNextEntry(int scanDesc) {
 	}
 	else
 	{
-        // read_value(my_scan->current->value2, &return_value, open_files[hashfile(my_scan->fileDesc)].attrLength2);
         return_value = my_scan->current->value2;
 	}
 
@@ -1330,22 +1337,29 @@ void *AM_FindNextEntry(int scanDesc) {
 }
 
 
-int AM_CloseIndexScan(int scanDesc) {
+int AM_CloseIndexScan(int scanDesc)
+{
     if(scans[scanDesc].fileDesc == -1)
 		return AME_SCANCLOSED;
+	
 	openscans--;
+	
 	scans[scanDesc].fileDesc = -1;
+    
     if(scans[scanDesc].current->value1 != NULL)
 	   free(scans[scanDesc].current->value1);
+    
     if(scans[scanDesc].current->value2 != NULL)
 	   free(scans[scanDesc].current->value2);
+	
 	free(scans[scanDesc].current);
 
 	return AME_OK;
 }
 
 
-void AM_PrintError(char *errString) {
+void AM_PrintError(char *errString)
+{
 	printf("%s", errString);
 	switch (AM_errno) {
 		case AME_WRONG_TYPES:
@@ -1375,11 +1389,12 @@ void AM_PrintError(char *errString) {
 	AM_errno = AME_OK;
 }
 
-void AM_Close() {
-		BF_Block_Destroy(&block);
-		BF_Block_Destroy(&temp_block);
-		BF_Block_Destroy(&new_block);
-		BF_Block_Destroy(&new_root);
+void AM_Close()
+{
+	BF_Block_Destroy(&block);
+	BF_Block_Destroy(&temp_block);
+	BF_Block_Destroy(&new_block);
+	BF_Block_Destroy(&new_root);
 
-		BF_Close();
+	BF_Close();
 }
