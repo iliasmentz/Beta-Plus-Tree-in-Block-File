@@ -374,7 +374,7 @@ scan_point * get_most_left(int fileDesc)
 
     // Write the values we're going to need
 	current->block_num = kid;
-	current->record_num = 0;
+	current->record_num = 1;
 	current->max_record = counter;
 	current->next_block = next;
 
@@ -437,7 +437,7 @@ scan_point * get_value_point(int fileDesc, void * value)
 
     // Write the values we are going to need
 	current->block_num = kid;
-	current->record_num = 0;
+	current->record_num = 1;
 	current->max_record = counter;
 	current->next_block = next;
 
